@@ -57,7 +57,7 @@
           <h2>Дашборд мониторинга сопоставления</h2>
           <p>
             В дашборде отображаются метрики покрытия, точности, качества каталога,
-            ручной разметки и риска деградации. Все значения берутся только из data.json.
+            ручной разметки и риска деградации. Все значения берутся из data.json.
           </p>
         </div>
         <div class="controls">
@@ -105,8 +105,8 @@
           <article class="card pad coverage-full">
             <div class="panel-head">
               <div>
-                <h3>Покрытие и поток офферов</h3>
-                <p>Coverage total, coverage shown, coverage GMV и поток офферов на одном графике.</p>
+                <h3>Покрытие</h3>
+                <p>Coverage total, coverage shown, coverage GMV.</p>
               </div>
               <span class="badge info">Mon / Thu / Sat</span>
             </div>
@@ -240,7 +240,7 @@
       <section class="section" id="other">
         <h3 class="section-title">Другое</h3>
 
-        <div class="grid-eq">
+        <div class="grid-eq equal-cards">
           <article class="card pad">
             <div class="panel-head">
               <div>
@@ -294,7 +294,9 @@
     const valueLabelPlugin = {
       id: 'valueLabelPlugin',
       afterDatasetsDraw(chart, args, pluginOptions) {
-        const { ctx } = chart;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+
         const opts = pluginOptions || {};
         const mode = opts.mode || 'last';
         const color = opts.color || css('--muted');
@@ -302,7 +304,6 @@
 
         ctx.save();
         ctx.font = '12px Inter, sans-serif';
-        ctx.fillStyle = color;
         ctx.textBaseline = 'middle';
 
         chart.data.datasets.forEach((dataset, datasetIndex) => {
@@ -312,14 +313,21 @@
           if (mode === 'last') {
             const lastIndex = dataset.data.length - 1;
             if (lastIndex < 0) return;
+
             const point = meta.data[lastIndex];
             if (!point) return;
+
             const value = dataset.data[lastIndex];
             const text = formatter(value, dataset, lastIndex);
             if (!text) return;
+
             ctx.fillStyle = dataset.borderColor || color;
-            ctx.textAlign = 'left';
-            ctx.fillText(text, point.x + 8, point.y);
+            ctx.textAlign = 'right';
+
+            const x = Math.min(point.x - 8, chartArea.right - 6);
+            const y = point.y - 10 < chartArea.top + 10 ? point.y + 10 : point.y - 10;
+
+            ctx.fillText(text, x, y);
           }
 
           if (mode === 'bars') {
@@ -327,9 +335,11 @@
               const value = dataset.data[index];
               const text = formatter(value, dataset, index);
               if (!text) return;
+
               ctx.fillStyle = color;
               ctx.textAlign = 'center';
-              ctx.fillText(text, bar.x, bar.y - 10);
+              const y = Math.max(bar.y - 10, chartArea.top + 10);
+              ctx.fillText(text, bar.x, y);
             });
           }
         });
@@ -492,9 +502,18 @@
       `).join('');
     }
 
+    function getCoverageSeries(){
+      if (state.selectedDepartment === 'all') {
+        return filterSeries(state.raw.series.coverage_snapshots || []);
+      }
+      return filterSeries((state.raw.series.coverage_by_department_snapshots || []).filter(
+        x => x.departmentId === state.selectedDepartment
+      ));
+    }
+
     function getFilteredData(){
       return {
-        coverage: filterSeries(state.raw.series.coverage_snapshots || []),
+        coverage: getCoverageSeries(),
         precisionTotal: filterSeries(state.raw.series.precision_total_weekly || []),
         precisionShow: filterSeries(state.raw.series.precision_show_weekly || []),
         precisionDepartments: filterSeries(state.raw.series.precision_by_department_monthly || []),
@@ -523,29 +542,11 @@
       latestRows.forEach(r => { precisionMap[r.departmentId] = r.precision; });
 
       const tbody = document.getElementById('departmentTable');
+      const departments = state.selectedDepartment === 'all'
+        ? (state.raw.departments || [])
+        : (state.raw.departments || []).filter(d => d.id === state.selectedDepartment);
 
-      if (state.selectedDepartment !== 'all') {
-        const dep = (state.raw.departments || []).find(d => d.id === state.selectedDepartment);
-        if (!dep) {
-          tbody.innerHTML = '';
-          return;
-        }
-        const precisionValue = precisionMap[dep.id] ?? dep.precision;
-        tbody.innerHTML = `
-          <tr>
-            <td><strong>${dep.name}</strong></td>
-            <td>${fmtNum(dep.size)}</td>
-            <td>${fmtPct(dep.coverage)}</td>
-            <td>${fmtPct(dep.coverage_show)}</td>
-            <td>${fmtPct(dep.coverage_gmv)}</td>
-            <td>${fmtPct(precisionValue)}</td>
-            <td><span class="badge ${riskBadgeClass(dep.risk)}">${riskBadgeText(dep.risk)} · ${fmtPct(dep.risk)}</span></td>
-          </tr>
-        `;
-        return;
-      }
-
-      tbody.innerHTML = (state.raw.departments || []).map(dep => {
+      tbody.innerHTML = departments.map(dep => {
         const precisionValue = precisionMap[dep.id] ?? dep.precision;
         return `
           <tr>
@@ -571,12 +572,13 @@
         <div class="mini-item"><span>Precision sample</span><strong>${fmtNum(lastPrecision?.sampleSize)}</strong></div>
         <div class="mini-item"><span>Catalog quality sample</span><strong>${fmtNum(lastManual?.sampleSize)}</strong></div>
         <div class="mini-item"><span>Последний catalog size</span><strong>${fmtNum(lastCoverage?.catalogSize)}</strong></div>
-        <div class="mini-item"><span>Последний offer flow</span><strong>${fmtNum(lastCoverage?.offerFlow)}</strong></div>
+        <div class="mini-item"><span>Последний shown SKU count</span><strong>${fmtNum(lastCoverage?.shownSkuCount)}</strong></div>
       `;
     }
 
     function renderKpis(){
       const data = getFilteredData();
+
       const [lastCoverage, prevCoverage] = lastTwo(data.coverage);
       const [lastPrecision, prevPrecision] = lastTwo(data.precisionTotal);
 
@@ -632,32 +634,21 @@
               data: coverage.map(x => +(x.coverage * 100).toFixed(2)),
               borderColor: css('--primary'),
               backgroundColor: rgba(css('--primary'), .12),
-              tension: .3,
-              yAxisID: 'y'
+              tension: .3
             },
             {
               label: 'Coverage shown',
               data: coverage.map(x => +(x.coverageShow * 100).toFixed(2)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
-              tension: .3,
-              yAxisID: 'y'
+              tension: .3
             },
             {
               label: 'Coverage GMV',
               data: coverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
               borderColor: css('--purple'),
               backgroundColor: rgba(css('--purple'), .12),
-              tension: .3,
-              yAxisID: 'y'
-            },
-            {
-              label: 'Offer flow',
-              data: coverage.map(x => x.offerFlow),
-              borderColor: css('--warning'),
-              backgroundColor: rgba(css('--warning'), .12),
-              tension: .25,
-              yAxisID: 'y1'
+              tension: .3
             }
           ]
         },
@@ -667,20 +658,12 @@
             ...base.plugins,
             valueLabelPlugin: {
               mode: 'last',
-              formatter: (v, dataset) => {
-                if (dataset.label === 'Offer flow') return `${Math.round(v / 1000)}k`;
-                return `${v.toFixed(1)}`;
-              }
+              formatter: (v) => `${v.toFixed(1)}`
             }
           },
           scales: {
-            x: base.scales.x,
-            y: { ...base.scales.y, min: 50, max: 100, position: 'left' },
-            y1: {
-              position: 'right',
-              ticks: { color: css('--muted') },
-              grid: { drawOnChartArea: false }
-            }
+            ...base.scales,
+            y: { ...base.scales.y, min: 45, max: 100 }
           }
         }
       }));
@@ -900,7 +883,7 @@
               formatter: (v) => `${v.toFixed(1)}`
             }
           },
-          scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } }
+          scales: { ...base.scales, y: { ...base.scales.y, min: 50, max: 100 } }
         }
       }));
 
