@@ -3,22 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Match Monitor — мониторинг сопоставления товаров</title>
+  <title>Match Monitor Dashboard</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
 
   <style>
     :root,[data-theme="light"]{
-      --bg:#f6f7f9;
+      --bg:#f6f8fb;
       --surface:#ffffff;
-      --surface-2:#f1f4f7;
+      --surface-2:#f2f5f9;
       --border:#e3e8ef;
-      --grid:#edf1f5;
-      --text:#18212f;
+      --grid:#edf2f7;
+      --text:#182230;
       --muted:#667085;
       --primary:#01696f;
       --primary-2:#5591c7;
@@ -28,8 +27,7 @@
       --purple:#7a39bb;
       --shadow:0 8px 24px rgba(16,24,40,.06);
       --radius:16px;
-      --radius-sm:12px;
-      --sidebar:260px;
+      --sidebar:270px;
     }
 
     [data-theme="dark"]{
@@ -37,21 +35,22 @@
       --surface:#151c24;
       --surface-2:#1b2430;
       --border:#263242;
-      --grid:#233041;
-      --text:#ecf2f8;
-      --muted:#9badc1;
-      --primary:#3aa0a7;
-      --primary-2:#7ab3e6;
-      --success:#6fcf74;
-      --warning:#ffb74d;
-      --danger:#ff6b6b;
-      --purple:#be8cff;
-      --shadow:0 8px 24px rgba(0,0,0,.28);
+      --grid:#223042;
+      --text:#edf3f9;
+      --muted:#9ca9ba;
+      --primary:#38a2a9;
+      --primary-2:#7eb5e4;
+      --success:#74d87d;
+      --warning:#ffb84d;
+      --danger:#ff7373;
+      --purple:#c095ff;
+      --shadow:0 8px 24px rgba(0,0,0,.25);
     }
 
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0}
+    html{scroll-behavior:smooth}
     body{
+      margin:0;
       font-family:Inter,system-ui,sans-serif;
       background:var(--bg);
       color:var(--text);
@@ -68,27 +67,28 @@
       position:sticky;
       top:0;
       height:100vh;
+      padding:22px 18px;
       background:var(--surface);
       border-right:1px solid var(--border);
-      padding:24px 18px;
       overflow:auto;
     }
 
     .brand{
       display:flex;
-      align-items:center;
       gap:12px;
-      margin-bottom:28px;
+      align-items:center;
+      margin-bottom:24px;
     }
 
-    .brand-logo{
-      width:40px;height:40px;
-      border-radius:12px;
-      display:grid;place-items:center;
+    .brand-mark{
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
       background:rgba(1,105,111,.12);
       color:var(--primary);
       font-weight:800;
-      font-size:18px;
     }
 
     .brand h1{
@@ -106,7 +106,7 @@
     .nav{
       display:grid;
       gap:8px;
-      margin-bottom:24px;
+      margin-bottom:22px;
     }
 
     .nav a{
@@ -124,18 +124,18 @@
       color:var(--text);
     }
 
-    .side-block{
+    .side-section{
       border-top:1px solid var(--border);
       padding-top:18px;
       margin-top:18px;
     }
 
     .side-title{
+      margin:0 0 10px;
       font-size:12px;
       text-transform:uppercase;
       letter-spacing:.08em;
       color:var(--muted);
-      margin-bottom:10px;
     }
 
     .legend-list{
@@ -145,9 +145,9 @@
 
     .legend-item{
       display:flex;
-      align-items:center;
       justify-content:space-between;
-      gap:10px;
+      align-items:center;
+      gap:8px;
       font-size:13px;
       color:var(--muted);
     }
@@ -160,7 +160,9 @@
     }
 
     .dot{
-      width:10px;height:10px;border-radius:50%;
+      width:10px;
+      height:10px;
+      border-radius:50%;
       flex:0 0 auto;
     }
 
@@ -169,16 +171,20 @@
       min-width:0;
     }
 
+    .mobile-top{
+      display:none;
+    }
+
     .topbar{
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
       gap:16px;
-      margin-bottom:24px;
+      margin-bottom:22px;
     }
 
     .topbar h2{
-      margin:0 0 6px;
+      margin:0 0 8px;
       font-size:30px;
       line-height:1.05;
     }
@@ -186,24 +192,24 @@
     .topbar p{
       margin:0;
       color:var(--muted);
-      max-width:880px;
+      max-width:900px;
       font-size:14px;
     }
 
     .controls{
       display:flex;
-      align-items:center;
-      gap:10px;
       flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
     }
 
     .btn,.select{
-      border:1px solid var(--border);
-      background:var(--surface);
+      font:inherit;
       color:var(--text);
+      background:var(--surface);
+      border:1px solid var(--border);
       border-radius:12px;
       padding:10px 12px;
-      font:inherit;
       box-shadow:var(--shadow);
     }
 
@@ -224,7 +230,7 @@
 
     .kpis{
       display:grid;
-      grid-template-columns:repeat(4, minmax(0,1fr));
+      grid-template-columns:repeat(4,minmax(0,1fr));
       gap:16px;
       margin-bottom:24px;
     }
@@ -232,7 +238,7 @@
     .card{
       background:var(--surface);
       border:1px solid var(--border);
-      border-radius:var(--radius);
+      border-radius:16px;
       box-shadow:var(--shadow);
     }
 
@@ -258,8 +264,8 @@
     .kpi-sub{
       margin-top:12px;
       font-size:13px;
-      font-variant-numeric:tabular-nums;
       color:var(--muted);
+      font-variant-numeric:tabular-nums;
     }
 
     .kpi-sub.good{color:var(--success)}
@@ -268,12 +274,12 @@
 
     .grid-2{
       display:grid;
-      grid-template-columns:1.45fr 1fr;
+      grid-template-columns:1.4fr 1fr;
       gap:16px;
       margin-bottom:16px;
     }
 
-    .grid-2-eq{
+    .grid-eq{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:16px;
@@ -301,39 +307,24 @@
 
     .panel-head p{
       margin:0;
-      color:var(--muted);
       font-size:13px;
+      color:var(--muted);
     }
 
     .badge{
       display:inline-flex;
       align-items:center;
-      border-radius:999px;
       padding:6px 10px;
+      border-radius:999px;
       font-size:12px;
       font-weight:700;
       white-space:nowrap;
     }
 
-    .badge.info{
-      background:rgba(1,105,111,.12);
-      color:var(--primary);
-    }
-
-    .badge.ok{
-      background:rgba(46,125,50,.12);
-      color:var(--success);
-    }
-
-    .badge.warn{
-      background:rgba(217,119,6,.12);
-      color:var(--warning);
-    }
-
-    .badge.alert{
-      background:rgba(198,40,40,.12);
-      color:var(--danger);
-    }
+    .badge.info{background:rgba(1,105,111,.12);color:var(--primary)}
+    .badge.ok{background:rgba(46,125,50,.12);color:var(--success)}
+    .badge.warn{background:rgba(217,119,6,.12);color:var(--warning)}
+    .badge.alert{background:rgba(198,40,40,.12);color:var(--danger)}
 
     .chart-wrap{
       position:relative;
@@ -341,7 +332,22 @@
     }
 
     .chart-wrap.tall{
-      height:360px;
+      height:380px;
+    }
+
+    .mini-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .mini-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:var(--surface-2);
+      font-size:13px;
     }
 
     table{
@@ -351,9 +357,9 @@
     }
 
     th,td{
+      text-align:left;
       padding:10px 8px;
       border-bottom:1px solid var(--border);
-      text-align:left;
       font-variant-numeric:tabular-nums;
     }
 
@@ -370,50 +376,21 @@
       overflow:auto;
     }
 
-    .mini-list{
-      display:grid;
-      gap:10px;
+    @media (max-width:1200px){
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-2,.grid-eq{grid-template-columns:1fr}
     }
 
-    .mini-item{
-      display:flex;
-      justify-content:space-between;
-      gap:14px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:var(--surface-2);
-      font-size:13px;
-    }
-
-    .muted{
-      color:var(--muted);
-    }
-
-    .small{
-      font-size:13px;
-    }
-
-    .mobile-head{
-      display:none;
-    }
-
-    @media (max-width: 1180px){
-      .kpis{grid-template-columns:repeat(2, minmax(0,1fr))}
-      .grid-2,.grid-2-eq{grid-template-columns:1fr}
-    }
-
-    @media (max-width: 860px){
+    @media (max-width:860px){
       .layout{grid-template-columns:1fr}
       .sidebar{display:none}
       .content{padding:16px}
-      .mobile-head{
+      .mobile-top{
         display:flex;
         justify-content:space-between;
         align-items:center;
-        gap:12px;
         margin-bottom:18px;
       }
-      .mobile-head strong{font-size:16px}
       .topbar{flex-direction:column}
       .kpis{grid-template-columns:1fr}
       .chart-wrap,.chart-wrap.tall{height:300px}
@@ -424,7 +401,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">MM</div>
+        <div class="brand-mark">MM</div>
         <div>
           <h1>Match Monitor</h1>
           <p>Мониторинг сопоставления товаров</p>
@@ -433,86 +410,115 @@
 
       <nav class="nav">
         <a href="#overview" class="active">Обзор</a>
-        <a href="#precision">Точность</a>
         <a href="#coverage">Покрытие</a>
-        <a href="#catalog-quality">Качество каталога</a>
+        <a href="#precision">Точность</a>
+        <a href="#catalog">Качество каталога</a>
         <a href="#annotation">Разметка</a>
       </nav>
 
-      <div class="side-block">
+      <div class="side-section">
         <div class="side-title">Типы сопоставления</div>
         <div class="legend-list" id="matchingLegend"></div>
       </div>
 
-      <div class="side-block">
+      <div class="side-section">
         <div class="side-title">Сигнал риска</div>
         <div class="legend-list">
-          <div class="legend-item">
-            <div class="legend-left"><span class="dot" style="background:var(--success)"></span><span>Норма</span></div>
-            <strong>&lt; 0.32</strong>
-          </div>
-          <div class="legend-item">
-            <div class="legend-left"><span class="dot" style="background:var(--warning)"></span><span>Риск</span></div>
-            <strong>0.32–0.45</strong>
-          </div>
-          <div class="legend-item">
-            <div class="legend-left"><span class="dot" style="background:var(--danger)"></span><span>Тревога</span></div>
-            <strong>&gt; 0.45</strong>
-          </div>
+          <div class="legend-item"><div class="legend-left"><span class="dot" style="background:var(--success)"></span><span>Норма</span></div><strong>&lt; 0.32</strong></div>
+          <div class="legend-item"><div class="legend-left"><span class="dot" style="background:var(--warning)"></span><span>Риск</span></div><strong>0.32–0.45</strong></div>
+          <div class="legend-item"><div class="legend-left"><span class="dot" style="background:var(--danger)"></span><span>Тревога</span></div><strong>&gt; 0.45</strong></div>
         </div>
       </div>
     </aside>
 
     <main class="content">
-      <div class="mobile-head">
+      <div class="mobile-top">
         <strong>Match Monitor</strong>
-        <button class="btn" id="themeToggleMobile" aria-label="Переключить тему">◐</button>
+        <button class="btn" id="themeToggleMobile">◐</button>
       </div>
 
-      <header class="topbar section" id="overview">
+      <section class="topbar section" id="overview">
         <div>
           <h2>Дашборд мониторинга сопоставления</h2>
           <p>
-            Интерфейс показывает метрики покрытия, точности, качества каталога,
-            качества ручной разметки и риск деградации покрытия. Частота замеров
-            соответствует заданной схеме: часть метрик считается ежедневно, часть — еженедельно или ежемесячно.
+            В дашборде отображаются метрики покрытия, точности, качества каталога,
+            ручной разметки и риска деградации. Частота замеров соответствует логике процесса:
+            покрытие — 3 раза в неделю, точность total и shown — еженедельно, срезы по департаментам и типам сопоставления — ежемесячно.
           </p>
         </div>
         <div class="controls">
-          <select class="select" id="departmentSelect" aria-label="Выбор департамента">
+          <select class="select" id="departmentSelect">
             <option value="all">Все департаменты</option>
           </select>
-          <button class="btn" id="themeToggle" aria-label="Переключить тему">◐</button>
+          <button class="btn" id="themeToggle">◐</button>
         </div>
-      </header>
+      </section>
 
       <section class="kpis">
         <article class="card pad">
-          <div class="kpi-label">Точность total, последний вторник</div>
-          <div class="kpi-value" id="kpiPrecisionTotal">—</div>
-          <div class="kpi-sub" id="kpiPrecisionTotalDelta">—</div>
-        </article>
-        <article class="card pad">
-          <div class="kpi-label">Точность shown, последний четверг</div>
-          <div class="kpi-value" id="kpiPrecisionShow">—</div>
-          <div class="kpi-sub" id="kpiPrecisionShowDelta">—</div>
-        </article>
-        <article class="card pad">
-          <div class="kpi-label">Покрытие shown, последний день</div>
+          <div class="kpi-label">Coverage shown</div>
           <div class="kpi-value" id="kpiCoverageShow">—</div>
           <div class="kpi-sub" id="kpiCoverageShowDelta">—</div>
         </article>
         <article class="card pad">
-          <div class="kpi-label">Риск деградации, последний день</div>
+          <div class="kpi-label">Coverage GMV</div>
+          <div class="kpi-value" id="kpiCoverageGmv">—</div>
+          <div class="kpi-sub" id="kpiCoverageGmvDelta">—</div>
+        </article>
+        <article class="card pad">
+          <div class="kpi-label">Precision total</div>
+          <div class="kpi-value" id="kpiPrecisionTotal">—</div>
+          <div class="kpi-sub" id="kpiPrecisionTotalDelta">—</div>
+        </article>
+        <article class="card pad">
+          <div class="kpi-label">Risk</div>
           <div class="kpi-value" id="kpiRisk">—</div>
           <div class="kpi-sub" id="kpiRiskDelta">—</div>
         </article>
       </section>
 
+      <section class="section" id="coverage">
+        <h3 class="section-title">Покрытие и риск</h3>
+        <div class="grid-2">
+          <article class="card pad">
+            <div class="panel-head">
+              <div>
+                <h3>Покрытие и поток офферов</h3>
+                <p>Coverage total, coverage shown, coverage GMV и поток офферов на одном графике.</p>
+              </div>
+              <span class="badge info">Mon / Thu / Sat</span>
+            </div>
+            <div class="chart-wrap tall"><canvas id="coverageChart"></canvas></div>
+          </article>
+
+          <div class="stack">
+            <article class="card pad">
+              <div class="panel-head">
+                <div>
+                  <h3>Риск деградации</h3>
+                  <p>Прогнозный сигнал снижения покрытия.</p>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
+            </article>
+
+            <article class="card pad">
+              <div class="panel-head">
+                <div>
+                  <h3>Объёмы</h3>
+                  <p>Размер каталога и число показанных SKU.</p>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="section" id="precision">
         <h3 class="section-title">Точность</h3>
 
-        <div class="grid-2">
+        <div class="grid-eq">
           <article class="card pad">
             <div class="panel-head">
               <div>
@@ -528,7 +534,7 @@
             <div class="panel-head">
               <div>
                 <h3>Точность shown</h3>
-                <p>Еженедельный замер по четвергам на товарах с показами.</p>
+                <p>Еженедельный замер по четвергам.</p>
               </div>
               <span class="badge info">Weekly</span>
             </div>
@@ -536,12 +542,12 @@
           </article>
         </div>
 
-        <div class="grid-2">
+        <div class="grid-eq">
           <article class="card pad">
             <div class="panel-head">
               <div>
                 <h3>Точность по департаментам</h3>
-                <p>Ежемесячный замер 15 числа. Одна линия — один департамент.</p>
+                <p>Ежемесячный замер на 15 число.</p>
               </div>
               <span class="badge info">Monthly</span>
             </div>
@@ -551,8 +557,8 @@
           <article class="card pad">
             <div class="panel-head">
               <div>
-                <h3>Точность по типу матча</h3>
-                <p>Ежемесячный замер 1 числа. Линии: VLM, GPT, Claude.</p>
+                <h3>Точность по типу сопоставления</h3>
+                <p>Ежемесячный замер на 1 число.</p>
               </div>
               <span class="badge info">Monthly</span>
             </div>
@@ -561,56 +567,16 @@
         </div>
       </section>
 
-      <section class="section" id="coverage">
-        <h3 class="section-title">Покрытие и риск</h3>
-
-        <div class="grid-2">
-          <article class="card pad">
-            <div class="panel-head">
-              <div>
-                <h3>Покрытие и поток офферов</h3>
-                <p>Ежедневные метрики: coverage total, coverage shown, coverage GMV и поток offer_id.</p>
-              </div>
-              <span class="badge info">Daily</span>
-            </div>
-            <div class="chart-wrap tall"><canvas id="coverageChart"></canvas></div>
-          </article>
-
-          <div class="stack">
-            <article class="card pad">
-              <div class="panel-head">
-                <div>
-                  <h3>Риск деградации покрытия</h3>
-                  <p>Ежедневный прогнозный сигнал с порогом 0.32.</p>
-                </div>
-              </div>
-              <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
-            </article>
-
-            <article class="card pad">
-              <div class="panel-head">
-                <div>
-                  <h3>Объёмы</h3>
-                  <p>Размер каталога, показанный ассортимент и поток офферов.</p>
-                </div>
-              </div>
-              <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="catalog-quality">
+      <section class="section" id="catalog">
         <h3 class="section-title">Качество каталога</h3>
 
-        <div class="grid-2">
+        <div class="grid-eq">
           <article class="card pad">
             <div class="panel-head">
               <div>
-                <h3>Заполненность и доступность признаков</h3>
-                <p>Ежедневный мониторинг brand/title/description/attributes и эмбеддингов.</p>
+                <h3>Заполненность и признаки</h3>
+                <p>Ключевые поля карточки и наличие эмбеддингов.</p>
               </div>
-              <span class="badge info">Daily</span>
             </div>
             <div class="chart-wrap tall"><canvas id="catalogQualityChart"></canvas></div>
           </article>
@@ -618,10 +584,9 @@
           <article class="card pad">
             <div class="panel-head">
               <div>
-                <h3>Диагностические метрики контента</h3>
-                <p>Средние длины текстов и показатели изображений.</p>
+                <h3>Диагностические метрики</h3>
+                <p>Длины текстов, число изображений и сигнатур.</p>
               </div>
-              <span class="badge info">Daily</span>
             </div>
             <div class="chart-wrap tall"><canvas id="contentMetricsChart"></canvas></div>
           </article>
@@ -629,14 +594,14 @@
       </section>
 
       <section class="section" id="annotation">
-        <h3 class="section-title">Разметка и ручной контроль качества</h3>
+        <h3 class="section-title">Разметка</h3>
 
-        <div class="grid-2-eq">
+        <div class="grid-eq">
           <article class="card pad">
             <div class="panel-head">
               <div>
                 <h3>Ручная оценка качества данных</h3>
-                <p>Ежемесячная оценка качества каталога и качества работы разметки.</p>
+                <p>Ежемесячная оценка качества данных и качества работы разметки.</p>
               </div>
               <span class="badge info">Monthly</span>
             </div>
@@ -646,8 +611,21 @@
           <article class="card pad">
             <div class="panel-head">
               <div>
+                <h3>Качество по sample cuts</h3>
+                <p>Ежемесячный мониторинг качества по тематическим срезам.</p>
+              </div>
+              <span class="badge info">Monthly</span>
+            </div>
+            <div class="chart-wrap"><canvas id="sampleCutsChart"></canvas></div>
+          </article>
+        </div>
+
+        <div class="grid-eq">
+          <article class="card pad">
+            <div class="panel-head">
+              <div>
                 <h3>Сводка по департаментам</h3>
-                <p>Агрегированный срез покрытия, точности и риска по крупным сегментам каталога.</p>
+                <p>Агрегированный срез покрытия, точности и риска.</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -667,24 +645,12 @@
               </table>
             </div>
           </article>
-        </div>
-
-        <div class="grid-2-eq">
-          <article class="card pad">
-            <div class="panel-head">
-              <div>
-                <h3>Срезы ручной разметки</h3>
-                <p>Набор тематических направлений, которые можно отображать как reference-блок.</p>
-              </div>
-            </div>
-            <div class="mini-list" id="sampleCutsList"></div>
-          </article>
 
           <article class="card pad">
             <div class="panel-head">
               <div>
                 <h3>Размеры выборок</h3>
-                <p>Используются для недельных и месячных измерений точности и качества данных.</p>
+                <p>Размеры семплов для регулярного контроля.</p>
               </div>
             </div>
             <div class="mini-list" id="sampleInfoList"></div>
@@ -723,66 +689,22 @@
       return new Intl.NumberFormat('ru-RU').format(v);
     }
 
-    function fmtDelta(v, suffix = 'п.п.'){
+    function fmtDelta(v){
       const sign = v > 0 ? '+' : '';
-      return `${sign}${(v * 100).toFixed(1)} ${suffix}`;
+      return `${sign}${(v * 100).toFixed(1)} п.п.`;
     }
+
+    function clamp(v, min, max){
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function latest(arr){ return arr[arr.length - 1]; }
+    function prev(arr){ return arr[arr.length - 2]; }
 
     function getDeltaClass(delta, reverse = false){
       if (Math.abs(delta) < 0.0001) return 'neutral';
       const good = reverse ? delta < 0 : delta > 0;
       return good ? 'good' : 'bad';
-    }
-
-    function chartBaseOptions(){
-      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const tick = css('--muted');
-      const grid = css('--grid');
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            labels: {
-              color: tick,
-              usePointStyle: true,
-              boxWidth: 8,
-              boxHeight: 8
-            }
-          },
-          tooltip: {
-            backgroundColor: dark ? '#111827' : '#ffffff',
-            titleColor: dark ? '#ffffff' : '#111827',
-            bodyColor: dark ? '#e5eef8' : '#111827',
-            borderColor: grid,
-            borderWidth: 1
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: tick, maxRotation: 0, autoSkip: true },
-            grid: { display: false }
-          },
-          y: {
-            ticks: { color: tick },
-            grid: { color: grid }
-          }
-        }
-      };
-    }
-
-    function destroyCharts(){
-      state.charts.forEach(c => c.destroy());
-      state.charts = [];
-    }
-
-    function latest(arr){
-      return arr[arr.length - 1];
-    }
-
-    function prev(arr){
-      return arr[arr.length - 2];
     }
 
     function riskBadgeClass(v){
@@ -797,36 +719,50 @@
       return 'Норма';
     }
 
-    function applyDepartmentFilterToDaily(daily){
-      if (state.selectedDepartment === 'all') return daily;
-
-      const dep = state.raw.departments.find(d => d.id === state.selectedDepartment);
-      if (!dep) return daily;
-
-      const departmentFactor = dep.coverage - 0.742;
-      const riskFactor = dep.risk - 0.21;
-
-      return daily.map(row => ({
-        ...row,
-        coverage: clamp(row.coverage + departmentFactor * 0.6, 0.40, 0.98),
-        coverageShow: clamp(row.coverageShow + departmentFactor * 0.7, 0.40, 0.99),
-        coverageGmv: clamp(row.coverageGmv + departmentFactor * 0.75, 0.40, 0.99),
-        brandFill: clamp(row.brandFill + departmentFactor * 0.15, 0.50, 1),
-        descFill: clamp(row.descFill + departmentFactor * 0.20, 0.40, 1),
-        attrsFill: clamp(row.attrsFill + departmentFactor * 0.16, 0.40, 1),
-        textEmb: clamp(row.textEmb + departmentFactor * 0.18, 0.40, 1),
-        imageEmb: clamp(row.imageEmb + departmentFactor * 0.18, 0.30, 1),
-        risk: clamp(row.risk + riskFactor * 0.35, 0, 1)
-      }));
+    function chartOptions(){
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: {
+              color: css('--muted'),
+              usePointStyle: true,
+              boxWidth: 8,
+              boxHeight: 8
+            }
+          },
+          tooltip: {
+            backgroundColor: dark ? '#10161d' : '#ffffff',
+            titleColor: dark ? '#ffffff' : '#101828',
+            bodyColor: dark ? '#e5eef8' : '#101828',
+            borderColor: css('--border'),
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: css('--muted'), maxRotation: 0, autoSkip: true },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: css('--muted') },
+            grid: { color: css('--grid') }
+          }
+        }
+      };
     }
 
-    function clamp(v, min, max){
-      return Math.max(min, Math.min(max, v));
+    function destroyCharts(){
+      state.charts.forEach(c => c.destroy());
+      state.charts = [];
     }
 
     function populateDepartmentSelect(){
       const select = document.getElementById('departmentSelect');
-      state.raw.departments.forEach(dep => {
+      (state.raw.departments || []).forEach(dep => {
         const option = document.createElement('option');
         option.value = dep.id;
         option.textContent = dep.name;
@@ -836,53 +772,20 @@
 
     function renderLegend(){
       const el = document.getElementById('matchingLegend');
-      el.innerHTML = state.raw.matching_types.map(mt => `
+      el.innerHTML = (state.raw.matching_types || []).map(mt => `
         <div class="legend-item">
           <div class="legend-left">
             <span class="dot" style="background:${mt.color}"></span>
             <span>${mt.label}</span>
           </div>
-          <strong>${fmtPct(mt.precision, 1)}</strong>
+          <strong>${fmtPct(mt.precision,1)}</strong>
         </div>
       `).join('');
-    }
-
-    function renderSampleCuts(){
-      const el = document.getElementById('sampleCutsList');
-      el.innerHTML = state.raw.sample_cuts.map(item => `
-        <div class="mini-item">
-          <span>${item}</span>
-          <strong>вкл.</strong>
-        </div>
-      `).join('');
-    }
-
-    function renderSampleInfo(){
-      const el = document.getElementById('sampleInfoList');
-      const summary = state.raw.summary;
-      el.innerHTML = `
-        <div class="mini-item">
-          <span>Precision sample</span>
-          <strong>${fmtNum(summary.labeling_sample_size_precision)}</strong>
-        </div>
-        <div class="mini-item">
-          <span>Catalog quality sample</span>
-          <strong>${fmtNum(summary.labeling_sample_size_catalog_quality)}</strong>
-        </div>
-        <div class="mini-item">
-          <span>Последний catalog size</span>
-          <strong>${fmtNum(summary.catalog_size)}</strong>
-        </div>
-        <div class="mini-item">
-          <span>Последний offer flow</span>
-          <strong>${fmtNum(summary.offer_flow_last)}</strong>
-        </div>
-      `;
     }
 
     function renderDepartmentTable(){
       const tbody = document.getElementById('departmentTable');
-      tbody.innerHTML = state.raw.departments.map(dep => `
+      tbody.innerHTML = (state.raw.departments || []).map(dep => `
         <tr>
           <td><strong>${dep.name}</strong></td>
           <td>${fmtNum(dep.size)}</td>
@@ -895,186 +798,98 @@
       `).join('');
     }
 
+    function renderSampleInfo(){
+      const s = state.raw.summary || {};
+      document.getElementById('sampleInfoList').innerHTML = `
+        <div class="mini-item"><span>Precision sample</span><strong>${fmtNum(s.labeling_sample_size_precision)}</strong></div>
+        <div class="mini-item"><span>Catalog quality sample</span><strong>${fmtNum(s.labeling_sample_size_catalog_quality)}</strong></div>
+        <div class="mini-item"><span>Последний catalog size</span><strong>${fmtNum(s.catalog_size)}</strong></div>
+        <div class="mini-item"><span>Последний offer flow</span><strong>${fmtNum(s.offer_flow_last)}</strong></div>
+      `;
+    }
+
+    function applyDepartmentToCoverage(rows){
+      if (state.selectedDepartment === 'all') return rows;
+
+      const dep = state.raw.departments.find(d => d.id === state.selectedDepartment);
+      if (!dep) return rows;
+
+      const baseCoverage = 0.742;
+      const baseRisk = 0.21;
+
+      const coverageFactor = dep.coverage - baseCoverage;
+      const riskFactor = dep.risk - baseRisk;
+
+      return rows.map(r => ({
+        ...r,
+        coverage: clamp(r.coverage + coverageFactor * 0.60, 0.45, 0.95),
+        coverageShow: clamp(r.coverageShow + coverageFactor * 0.72, 0.50, 0.97),
+        coverageGmv: clamp(r.coverageGmv + coverageFactor * 0.78, 0.55, 0.98),
+        brandFill: clamp(r.brandFill + coverageFactor * 0.12, 0.60, 1),
+        descFill: clamp(r.descFill + coverageFactor * 0.18, 0.50, 1),
+        attrsFill: clamp(r.attrsFill + coverageFactor * 0.15, 0.50, 1),
+        textEmb: clamp(r.textEmb + coverageFactor * 0.16, 0.50, 1),
+        imageEmb: clamp(r.imageEmb + coverageFactor * 0.16, 0.45, 1),
+        risk: clamp(r.risk + riskFactor * 0.35, 0, 1)
+      }));
+    }
+
     function renderKpis(){
-      const total = state.raw.series.precision_total_weekly;
-      const shown = state.raw.series.precision_show_weekly;
-      const daily = applyDepartmentFilterToDaily(state.raw.series.daily_snapshots);
+      const coverage = applyDepartmentToCoverage(state.raw.series.coverage_snapshots || []);
+      const precisionTotal = state.raw.series.precision_total_weekly || [];
 
-      const lastTotal = latest(total);
-      const prevTotal = prev(total);
-      const lastShown = latest(shown);
-      const prevShown = prev(shown);
-      const lastDaily = latest(daily);
-      const prevDaily = prev(daily);
+      const lastCoverage = latest(coverage);
+      const prevCoverage = prev(coverage);
+      const lastPrecision = latest(precisionTotal);
+      const prevPrecision = prev(precisionTotal);
 
-      document.getElementById('kpiPrecisionTotal').textContent = fmtPct(lastTotal.precisionTotal);
-      const totalDelta = lastTotal.precisionTotal - prevTotal.precisionTotal;
-      const totalDeltaEl = document.getElementById('kpiPrecisionTotalDelta');
-      totalDeltaEl.textContent = `${fmtDelta(totalDelta)} к прошлому вторнику`;
-      totalDeltaEl.className = `kpi-sub ${getDeltaClass(totalDelta)}`;
+      document.getElementById('kpiCoverageShow').textContent = fmtPct(lastCoverage.coverageShow);
+      const covShowDelta = lastCoverage.coverageShow - prevCoverage.coverageShow;
+      const covShowEl = document.getElementById('kpiCoverageShowDelta');
+      covShowEl.textContent = `${fmtDelta(covShowDelta)} к прошлому замеру`;
+      covShowEl.className = `kpi-sub ${getDeltaClass(covShowDelta)}`;
 
-      document.getElementById('kpiPrecisionShow').textContent = fmtPct(lastShown.precisionShow);
-      const showDelta = lastShown.precisionShow - prevShown.precisionShow;
-      const showDeltaEl = document.getElementById('kpiPrecisionShowDelta');
-      showDeltaEl.textContent = `${fmtDelta(showDelta)} к прошлому четвергу`;
-      showDeltaEl.className = `kpi-sub ${getDeltaClass(showDelta)}`;
+      document.getElementById('kpiCoverageGmv').textContent = fmtPct(lastCoverage.coverageGmv);
+      const covGmvDelta = lastCoverage.coverageGmv - prevCoverage.coverageGmv;
+      const covGmvEl = document.getElementById('kpiCoverageGmvDelta');
+      covGmvEl.textContent = `${fmtDelta(covGmvDelta)} к прошлому замеру`;
+      covGmvEl.className = `kpi-sub ${getDeltaClass(covGmvDelta)}`;
 
-      document.getElementById('kpiCoverageShow').textContent = fmtPct(lastDaily.coverageShow);
-      const coverageDelta = lastDaily.coverageShow - prevDaily.coverageShow;
-      const coverageDeltaEl = document.getElementById('kpiCoverageShowDelta');
-      coverageDeltaEl.textContent = `${fmtDelta(coverageDelta)} к прошлому дню`;
-      coverageDeltaEl.className = `kpi-sub ${getDeltaClass(coverageDelta)}`;
+      document.getElementById('kpiPrecisionTotal').textContent = fmtPct(lastPrecision.precisionTotal);
+      const prDelta = lastPrecision.precisionTotal - prevPrecision.precisionTotal;
+      const prEl = document.getElementById('kpiPrecisionTotalDelta');
+      prEl.textContent = `${fmtDelta(prDelta)} к прошлому вторнику`;
+      prEl.className = `kpi-sub ${getDeltaClass(prDelta)}`;
 
-      document.getElementById('kpiRisk').textContent = fmtPct(lastDaily.risk);
-      const riskDelta = lastDaily.risk - prevDaily.risk;
-      const riskDeltaEl = document.getElementById('kpiRiskDelta');
-      riskDeltaEl.textContent = `${fmtDelta(riskDelta)} к прошлому дню`;
-      riskDeltaEl.className = `kpi-sub ${getDeltaClass(riskDelta, true)}`;
+      document.getElementById('kpiRisk').textContent = fmtPct(lastCoverage.risk);
+      const riskDelta = lastCoverage.risk - prevCoverage.risk;
+      const riskEl = document.getElementById('kpiRiskDelta');
+      riskEl.textContent = `${fmtDelta(riskDelta)} к прошлому замеру`;
+      riskEl.className = `kpi-sub ${getDeltaClass(riskDelta, true)}`;
     }
 
     function buildCharts(){
       destroyCharts();
 
-      const daily = applyDepartmentFilterToDaily(state.raw.series.daily_snapshots);
-      const totalWeekly = state.raw.series.precision_total_weekly;
-      const shownWeekly = state.raw.series.precision_show_weekly;
-      const deptMonthly = state.raw.series.precision_by_department_monthly;
-      const matchMonthly = state.raw.series.precision_by_matching_type_monthly;
-      const manualMonthly = state.raw.series.catalog_quality_manual_monthly;
+      const coverage = applyDepartmentToCoverage(state.raw.series.coverage_snapshots || []);
+      const precisionTotal = state.raw.series.precision_total_weekly || [];
+      const precisionShow = state.raw.series.precision_show_weekly || [];
+      const precisionDepartments = state.raw.series.precision_by_department_monthly || [];
+      const precisionTypes = state.raw.series.precision_by_matching_type_monthly || [];
+      const manualQuality = state.raw.series.catalog_quality_manual_monthly || [];
+      const sampleCutQuality = state.raw.series.sample_cut_quality_monthly || [];
 
-      const base = chartBaseOptions();
+      const base = chartOptions();
 
-      // precision total
-      state.charts.push(new Chart(document.getElementById('precisionTotalChart'), {
-        type: 'line',
-        data: {
-          labels: totalWeekly.map(x => x.label),
-          datasets: [{
-            label: 'Precision total',
-            data: totalWeekly.map(x => +(x.precisionTotal * 100).toFixed(2)),
-            borderColor: css('--primary'),
-            backgroundColor: rgba(css('--primary'), .14),
-            fill: true,
-            tension: .35,
-            pointRadius: 3
-          }]
-        },
-        options: {
-          ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 90, max: 100 }
-          }
-        }
-      }));
-
-      // precision shown
-      state.charts.push(new Chart(document.getElementById('precisionShowChart'), {
-        type: 'line',
-        data: {
-          labels: shownWeekly.map(x => x.label),
-          datasets: [{
-            label: 'Precision shown',
-            data: shownWeekly.map(x => +(x.precisionShow * 100).toFixed(2)),
-            borderColor: css('--success'),
-            backgroundColor: rgba(css('--success'), .14),
-            fill: true,
-            tension: .35,
-            pointRadius: 3
-          }]
-        },
-        options: {
-          ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 90, max: 100 }
-          }
-        }
-      }));
-
-      // precision by department
-      const deptGroups = {};
-      deptMonthly.forEach(row => {
-        if (!deptGroups[row.departmentName]) deptGroups[row.departmentName] = [];
-        deptGroups[row.departmentName].push(row);
-      });
-      const deptLabels = [...new Set(deptMonthly.map(x => x.label))];
-
-      const deptColors = [
-        css('--primary'),
-        css('--primary-2'),
-        css('--success'),
-        css('--warning'),
-        css('--danger'),
-        css('--purple')
-      ];
-
-      state.charts.push(new Chart(document.getElementById('precisionDepartmentChart'), {
-        type: 'line',
-        data: {
-          labels: deptLabels,
-          datasets: Object.entries(deptGroups).map(([name, rows], idx) => ({
-            label: name,
-            data: rows.map(x => +(x.precision * 100).toFixed(2)),
-            borderColor: deptColors[idx % deptColors.length],
-            backgroundColor: rgba(deptColors[idx % deptColors.length], .12),
-            fill: false,
-            tension: .3,
-            pointRadius: 3
-          }))
-        },
-        options: {
-          ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 90, max: 100 }
-          }
-        }
-      }));
-
-      // precision by matching type
-      const mtGroups = {};
-      matchMonthly.forEach(row => {
-        if (!mtGroups[row.matchingType]) mtGroups[row.matchingType] = [];
-        mtGroups[row.matchingType].push(row);
-      });
-      const mtLabels = [...new Set(matchMonthly.map(x => x.label))];
-
-      const matchingColorMap = {};
-      state.raw.matching_types.forEach(mt => matchingColorMap[mt.key] = mt.color);
-
-      state.charts.push(new Chart(document.getElementById('precisionMatchingTypeChart'), {
-        type: 'line',
-        data: {
-          labels: mtLabels,
-          datasets: Object.entries(mtGroups).map(([name, rows]) => ({
-            label: name,
-            data: rows.map(x => +(x.precision * 100).toFixed(2)),
-            borderColor: matchingColorMap[name] || css('--primary'),
-            backgroundColor: rgba(matchingColorMap[name] || css('--primary'), .12),
-            fill: false,
-            tension: .3,
-            pointRadius: 3
-          }))
-        },
-        options: {
-          ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 90, max: 100 }
-          }
-        }
-      }));
-
-      // coverage
+      // Coverage chart
       state.charts.push(new Chart(document.getElementById('coverageChart'), {
         type: 'line',
         data: {
-          labels: daily.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
               label: 'Coverage total',
-              data: daily.map(x => +(x.coverage * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverage * 100).toFixed(2)),
               borderColor: css('--primary'),
               backgroundColor: rgba(css('--primary'), .12),
               tension: .3,
@@ -1082,7 +897,7 @@
             },
             {
               label: 'Coverage shown',
-              data: daily.map(x => +(x.coverageShow * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverageShow * 100).toFixed(2)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .3,
@@ -1090,7 +905,7 @@
             },
             {
               label: 'Coverage GMV',
-              data: daily.map(x => +(x.coverageGmv * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
               borderColor: css('--purple'),
               backgroundColor: rgba(css('--purple'), .12),
               tension: .3,
@@ -1098,10 +913,10 @@
             },
             {
               label: 'Offer flow',
-              data: daily.map(x => x.offerFlow),
+              data: coverage.map(x => x.offerFlow),
               borderColor: css('--warning'),
               backgroundColor: rgba(css('--warning'), .12),
-              tension: .2,
+              tension: .25,
               yAxisID: 'y1'
             }
           ]
@@ -1110,40 +925,31 @@
           ...base,
           scales: {
             x: base.scales.x,
-            y: {
-              ...base.scales.y,
-              min: 50,
-              max: 100,
-              position: 'left'
-            },
-            y1: {
-              position: 'right',
-              ticks: { color: css('--muted') },
-              grid: { drawOnChartArea: false }
-            }
+            y: { ...base.scales.y, min: 50, max: 100, position: 'left' },
+            y1: { position: 'right', ticks: { color: css('--muted') }, grid: { drawOnChartArea: false } }
           }
         }
       }));
 
-      // risk
+      // Risk chart
       state.charts.push(new Chart(document.getElementById('riskChart'), {
         type: 'line',
         data: {
-          labels: daily.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
-              label: 'Риск',
-              data: daily.map(x => +(x.risk * 100).toFixed(1)),
+              label: 'Risk',
+              data: coverage.map(x => +(x.risk * 100).toFixed(1)),
               borderColor: css('--danger'),
               backgroundColor: rgba(css('--danger'), .14),
               fill: true,
               tension: .3
             },
             {
-              label: 'Порог 0.32',
-              data: daily.map(() => 32),
+              label: 'Threshold',
+              data: coverage.map(() => 32),
               borderColor: css('--warning'),
-              borderDash: [6,6],
+              borderDash: [6, 6],
               pointRadius: 0
             }
           ]
@@ -1157,22 +963,22 @@
         }
       }));
 
-      // volume
+      // Volume chart
       state.charts.push(new Chart(document.getElementById('volumeChart'), {
         type: 'line',
         data: {
-          labels: daily.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
               label: 'Catalog size',
-              data: daily.map(x => x.catalogSize),
+              data: coverage.map(x => x.catalogSize),
               borderColor: css('--primary-2'),
               backgroundColor: rgba(css('--primary-2'), .12),
               tension: .25
             },
             {
               label: 'Shown SKU count',
-              data: daily.map(x => x.shownSkuCount),
+              data: coverage.map(x => x.shownSkuCount),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .25
@@ -1182,91 +988,186 @@
         options: base
       }));
 
-      // catalog quality
+      // Precision total
+      state.charts.push(new Chart(document.getElementById('precisionTotalChart'), {
+        type: 'line',
+        data: {
+          labels: precisionTotal.map(x => x.label),
+          datasets: [{
+            label: 'Precision total',
+            data: precisionTotal.map(x => +(x.precisionTotal * 100).toFixed(2)),
+            borderColor: css('--primary'),
+            backgroundColor: rgba(css('--primary'), .12),
+            fill: true,
+            tension: .3
+          }]
+        },
+        options: {
+          ...base,
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
+      }));
+
+      // Precision shown
+      state.charts.push(new Chart(document.getElementById('precisionShowChart'), {
+        type: 'line',
+        data: {
+          labels: precisionShow.map(x => x.label),
+          datasets: [{
+            label: 'Precision shown',
+            data: precisionShow.map(x => +(x.precisionShow * 100).toFixed(2)),
+            borderColor: css('--success'),
+            backgroundColor: rgba(css('--success'), .12),
+            fill: true,
+            tension: .3
+          }]
+        },
+        options: {
+          ...base,
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
+      }));
+
+      // Precision by departments
+      const depLabels = [...new Set(precisionDepartments.map(x => x.label))];
+      const depGroups = {};
+      precisionDepartments.forEach(row => {
+        if (!depGroups[row.departmentName]) depGroups[row.departmentName] = [];
+        depGroups[row.departmentName].push(row);
+      });
+      const depColors = [css('--primary'), css('--primary-2'), css('--success'), css('--warning'), css('--danger'), css('--purple')];
+
+      state.charts.push(new Chart(document.getElementById('precisionDepartmentChart'), {
+        type: 'line',
+        data: {
+          labels: depLabels,
+          datasets: Object.entries(depGroups).map(([name, rows], idx) => ({
+            label: name,
+            data: rows.map(x => +(x.precision * 100).toFixed(2)),
+            borderColor: depColors[idx % depColors.length],
+            backgroundColor: rgba(depColors[idx % depColors.length], .1),
+            tension: .25,
+            fill: false
+          }))
+        },
+        options: {
+          ...base,
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
+      }));
+
+      // Precision by matching type
+      const typeLabels = [...new Set(precisionTypes.map(x => x.label))];
+      const typeGroups = {};
+      precisionTypes.forEach(row => {
+        if (!typeGroups[row.matchingType]) typeGroups[row.matchingType] = [];
+        typeGroups[row.matchingType].push(row);
+      });
+      const colorMap = {};
+      (state.raw.matching_types || []).forEach(mt => colorMap[mt.key] = mt.color);
+
+      state.charts.push(new Chart(document.getElementById('precisionMatchingTypeChart'), {
+        type: 'line',
+        data: {
+          labels: typeLabels,
+          datasets: Object.entries(typeGroups).map(([name, rows]) => ({
+            label: name,
+            data: rows.map(x => +(x.precision * 100).toFixed(2)),
+            borderColor: colorMap[name] || css('--primary'),
+            backgroundColor: rgba(colorMap[name] || css('--primary'), .12),
+            tension: .25,
+            fill: false
+          }))
+        },
+        options: {
+          ...base,
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
+      }));
+
+      // Catalog quality
       state.charts.push(new Chart(document.getElementById('catalogQualityChart'), {
         type: 'line',
         data: {
-          labels: daily.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
-            { label: 'Brand fill', data: daily.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
-            { label: 'Title fill', data: daily.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Description fill', data: daily.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
-            { label: 'Attributes fill', data: daily.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
-            { label: 'Text embeddings', data: daily.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
-            { label: 'Image embeddings', data: daily.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
+            { label: 'Brand fill', data: coverage.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
+            { label: 'Title fill', data: coverage.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Description fill', data: coverage.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
+            { label: 'Attributes fill', data: coverage.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
+            { label: 'Text embeddings', data: coverage.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
+            { label: 'Image embeddings', data: coverage.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
           ]
         },
         options: {
           ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 60, max: 100 }
-          }
+          scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } }
         }
       }));
 
-      // content metrics
+      // Content metrics
       state.charts.push(new Chart(document.getElementById('contentMetricsChart'), {
         type: 'line',
         data: {
-          labels: daily.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
-            { label: 'Title len', data: daily.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
-            { label: 'Description len', data: daily.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Image count', data: daily.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
-            { label: 'Image signatures', data: daily.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
+            { label: 'Title len', data: coverage.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
+            { label: 'Description len', data: coverage.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Image count', data: coverage.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
+            { label: 'Image signatures', data: coverage.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
           ]
         },
         options: base
       }));
 
-      // manual quality
+      // Manual quality
       state.charts.push(new Chart(document.getElementById('manualQualityChart'), {
         type: 'bar',
         data: {
-          labels: manualMonthly.map(x => x.label),
+          labels: manualQuality.map(x => x.label),
           datasets: [
-            {
-              label: 'Catalog quality manual',
-              data: manualMonthly.map(x => +(x.catalogQualityManual * 100).toFixed(1)),
-              backgroundColor: rgba(css('--primary'), .75),
-              borderRadius: 10
-            },
-            {
-              label: 'Annotation agreement',
-              data: manualMonthly.map(x => +(x.annotationAgreement * 100).toFixed(1)),
-              backgroundColor: rgba(css('--warning'), .75),
-              borderRadius: 10
-            },
-            {
-              label: 'Repeatability',
-              data: manualMonthly.map(x => +(x.annotationRepeatability * 100).toFixed(1)),
-              backgroundColor: rgba(css('--success'), .75),
-              borderRadius: 10
-            },
-            {
-              label: 'Golden set accuracy',
-              data: manualMonthly.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)),
-              backgroundColor: rgba(css('--purple'), .75),
-              borderRadius: 10
-            }
+            { label: 'Catalog quality manual', data: manualQuality.map(x => +(x.catalogQualityManual * 100).toFixed(1)), backgroundColor: rgba(css('--primary'), .78), borderRadius: 10 },
+            { label: 'Agreement', data: manualQuality.map(x => +(x.annotationAgreement * 100).toFixed(1)), backgroundColor: rgba(css('--warning'), .78), borderRadius: 10 },
+            { label: 'Repeatability', data: manualQuality.map(x => +(x.annotationRepeatability * 100).toFixed(1)), backgroundColor: rgba(css('--success'), .78), borderRadius: 10 },
+            { label: 'Golden set', data: manualQuality.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)), backgroundColor: rgba(css('--purple'), .78), borderRadius: 10 }
           ]
         },
         options: {
           ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 80, max: 100 }
-          }
+          scales: { ...base.scales, y: { ...base.scales.y, min: 80, max: 100 } }
         }
       }));
-    }
 
-    function setTheme(theme){
-      document.documentElement.setAttribute('data-theme', theme);
-      destroyCharts();
-      renderKpis();
-      buildCharts();
+      // Sample cuts quality
+      const cutLabels = [...new Set(sampleCutQuality.map(x => x.label))];
+      const cutGroups = {};
+      sampleCutQuality.forEach(row => {
+        if (!cutGroups[row.sampleCut]) cutGroups[row.sampleCut] = [];
+        cutGroups[row.sampleCut].push(row);
+      });
+      const cutPalette = [
+        "#01696f","#5591c7","#7a39bb","#d97706","#2e7d32",
+        "#c62828","#0ea5e9","#8b5cf6","#14b8a6","#f59e0b"
+      ];
+
+      state.charts.push(new Chart(document.getElementById('sampleCutsChart'), {
+        type: 'line',
+        data: {
+          labels: cutLabels,
+          datasets: Object.entries(cutGroups).map(([name, rows], idx) => ({
+            label: name,
+            data: rows.map(x => +(x.quality * 100).toFixed(2)),
+            borderColor: cutPalette[idx % cutPalette.length],
+            backgroundColor: rgba(cutPalette[idx % cutPalette.length], .1),
+            tension: .25,
+            fill: false
+          }))
+        },
+        options: {
+          ...base,
+          scales: { ...base.scales, y: { ...base.scales.y, min: 85, max: 100 } }
+        }
+      }));
     }
 
     function bindEvents(){
@@ -1276,13 +1177,15 @@
         buildCharts();
       });
 
-      const toggle = () => {
+      const toggleTheme = () => {
         const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        setTheme(next);
+        document.documentElement.setAttribute('data-theme', next);
+        renderKpis();
+        buildCharts();
       };
 
-      document.getElementById('themeToggle').addEventListener('click', toggle);
-      document.getElementById('themeToggleMobile').addEventListener('click', toggle);
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
 
       document.querySelectorAll('.nav a').forEach(link => {
         link.addEventListener('click', () => {
@@ -1300,9 +1203,8 @@
 
         populateDepartmentSelect();
         renderLegend();
-        renderSampleCuts();
-        renderSampleInfo();
         renderDepartmentTable();
+        renderSampleInfo();
 
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
@@ -1313,11 +1215,11 @@
       }catch(err){
         console.error(err);
         document.body.innerHTML = `
-          <div style="max-width:900px;margin:60px auto;padding:24px;font-family:Inter,system-ui,sans-serif">
-            <h1 style="margin:0 0 12px">Не удалось загрузить data.json</h1>
+          <div style="max-width:920px;margin:60px auto;padding:24px;font-family:Inter,system-ui,sans-serif">
+            <h1 style="margin:0 0 12px">Ошибка загрузки data.json</h1>
             <p style="color:#667085;line-height:1.6">
-              Проверь, что файл <strong>data.json</strong> лежит рядом с <strong>index.html</strong> и страница открыта через локальный сервер,
-              а не напрямую из файловой системы.
+              Проверь, что файл <strong>data.json</strong> лежит рядом с <strong>index.html</strong> и страница открыта через HTTP
+              (например, GitHub Pages или локальный сервер), а не через <code>file://</code>.
             </p>
             <pre style="background:#f5f5f5;padding:16px;border-radius:12px;overflow:auto">${String(err)}</pre>
           </div>
