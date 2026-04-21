@@ -8,413 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
-
-  <style>
-    :root,[data-theme="light"]{
-      --bg:#f6f8fb;
-      --surface:#ffffff;
-      --surface-2:#f2f5f9;
-      --border:#e3e8ef;
-      --grid:#edf2f7;
-      --text:#182230;
-      --muted:#667085;
-      --primary:#01696f;
-      --primary-2:#5591c7;
-      --success:#2e7d32;
-      --warning:#d97706;
-      --danger:#c62828;
-      --purple:#7a39bb;
-      --shadow:0 8px 24px rgba(16,24,40,.06);
-      --sidebar:270px;
-    }
-
-    [data-theme="dark"]{
-      --bg:#0f141a;
-      --surface:#151c24;
-      --surface-2:#1b2430;
-      --border:#263242;
-      --grid:#223042;
-      --text:#edf3f9;
-      --muted:#9ca9ba;
-      --primary:#38a2a9;
-      --primary-2:#7eb5e4;
-      --success:#74d87d;
-      --warning:#ffb84d;
-      --danger:#ff7373;
-      --purple:#c095ff;
-      --shadow:0 8px 24px rgba(0,0,0,.25);
-    }
-
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      font-family:Inter,system-ui,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      line-height:1.45;
-    }
-
-    .layout{
-      display:grid;
-      grid-template-columns:var(--sidebar) 1fr;
-      min-height:100vh;
-    }
-
-    .sidebar{
-      position:sticky;
-      top:0;
-      height:100vh;
-      padding:22px 18px;
-      background:var(--surface);
-      border-right:1px solid var(--border);
-      overflow:auto;
-    }
-
-    .brand{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      margin-bottom:24px;
-    }
-
-    .brand-mark{
-      width:42px;
-      height:42px;
-      border-radius:14px;
-      display:grid;
-      place-items:center;
-      background:rgba(1,105,111,.12);
-      color:var(--primary);
-      font-weight:800;
-    }
-
-    .brand h1{
-      margin:0;
-      font-size:18px;
-      line-height:1.1;
-    }
-
-    .brand p{
-      margin:4px 0 0;
-      font-size:13px;
-      color:var(--muted);
-    }
-
-    .nav{
-      display:grid;
-      gap:8px;
-      margin-bottom:22px;
-    }
-
-    .nav a{
-      text-decoration:none;
-      color:var(--muted);
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:14px;
-      font-weight:500;
-    }
-
-    .nav a:hover,
-    .nav a.active{
-      background:var(--surface-2);
-      color:var(--text);
-    }
-
-    .side-section{
-      border-top:1px solid var(--border);
-      padding-top:18px;
-      margin-top:18px;
-    }
-
-    .side-title{
-      margin:0 0 10px;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:var(--muted);
-    }
-
-    .legend-list{
-      display:grid;
-      gap:10px;
-    }
-
-    .legend-item{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:var(--muted);
-    }
-
-    .legend-left{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-
-    .dot{
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      flex:0 0 auto;
-    }
-
-    .content{
-      padding:28px;
-      min-width:0;
-    }
-
-    .mobile-top{
-      display:none;
-    }
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:16px;
-      margin-bottom:22px;
-    }
-
-    .topbar h2{
-      margin:0 0 8px;
-      font-size:30px;
-      line-height:1.05;
-    }
-
-    .topbar p{
-      margin:0;
-      color:var(--muted);
-      max-width:900px;
-      font-size:14px;
-    }
-
-    .controls{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-
-    .btn,.select,.input{
-      font:inherit;
-      color:var(--text);
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:10px 12px;
-      box-shadow:var(--shadow);
-    }
-
-    .btn{
-      cursor:pointer;
-      min-width:44px;
-      min-height:44px;
-    }
-
-    .input{
-      min-width:150px;
-    }
-
-    .controls-group{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .section{
-      margin-bottom:28px;
-    }
-
-    .section-title{
-      margin:0 0 14px;
-      font-size:20px;
-    }
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:16px;
-      margin-bottom:24px;
-    }
-
-    .card{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-    }
-
-    .card.pad{
-      padding:18px;
-    }
-
-    .kpi-label{
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:var(--muted);
-      margin-bottom:14px;
-    }
-
-    .kpi-value{
-      font-size:34px;
-      font-weight:800;
-      line-height:1;
-      font-variant-numeric:tabular-nums;
-    }
-
-    .kpi-sub{
-      margin-top:12px;
-      font-size:13px;
-      color:var(--muted);
-      font-variant-numeric:tabular-nums;
-    }
-
-    .kpi-sub.good{color:var(--success)}
-    .kpi-sub.bad{color:var(--danger)}
-    .kpi-sub.neutral{color:var(--muted)}
-
-    .grid-2{
-      display:grid;
-      grid-template-columns:1.4fr 1fr;
-      gap:16px;
-      margin-bottom:16px;
-      align-items:start;
-    }
-    
-    .grid-eq{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
-      margin-bottom:16px;
-      align-items:start;
-    }
-
-
-    .stack{
-      display:grid;
-      gap:16px;
-    }
-
-    .panel-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      margin-bottom:12px;
-    }
-
-    .panel-head h3{
-      margin:0 0 6px;
-      font-size:18px;
-      line-height:1.15;
-    }
-
-    .panel-head p{
-      margin:0;
-      font-size:13px;
-      color:var(--muted);
-    }
-
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-
-    .badge.info{background:rgba(1,105,111,.12);color:var(--primary)}
-    .badge.ok{background:rgba(46,125,50,.12);color:var(--success)}
-    .badge.warn{background:rgba(217,119,6,.12);color:var(--warning)}
-    .badge.alert{background:rgba(198,40,40,.12);color:var(--danger)}
-
-    .chart-wrap{
-      position:relative;
-      height:320px;
-    }
-
-    .chart-wrap.tight{
-      height:295px;
-    }
-
-    .chart-wrap.tall{
-      height:360px;
-    }
-
-    .mini-list{
-      display:grid;
-      gap:10px;
-    }
-
-    .mini-item{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:var(--surface-2);
-      font-size:13px;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:13px;
-    }
-
-    th,td{
-      text-align:left;
-      padding:10px 8px;
-      border-bottom:1px solid var(--border);
-      font-variant-numeric:tabular-nums;
-    }
-
-    th{
-      color:var(--muted);
-      font-weight:600;
-    }
-
-    tbody tr:hover{
-      background:var(--surface-2);
-    }
-
-    .table-wrap{
-      overflow:auto;
-    }
-
-    @media (max-width:1200px){
-      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-2,.grid-eq{grid-template-columns:1fr}
-    }
-
-    @media (max-width:860px){
-      .layout{grid-template-columns:1fr}
-      .sidebar{display:none}
-      .content{padding:16px}
-      .mobile-top{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:18px;
-      }
-      .topbar{flex-direction:column}
-      .controls{justify-content:flex-start}
-      .kpis{grid-template-columns:1fr}
-      .chart-wrap,.chart-wrap.tight,.chart-wrap.tall{height:300px}
-    }
-  </style>
 </head>
 <body>
   <div class="layout">
@@ -504,8 +100,9 @@
 
       <section class="section" id="coverage">
         <h3 class="section-title">Покрытие и риск</h3>
-        <div class="grid-2">
-          <article class="card pad">
+
+        <div class="coverage-layout">
+          <article class="card pad coverage-full">
             <div class="panel-head">
               <div>
                 <h3>Покрытие и поток офферов</h3>
@@ -513,30 +110,28 @@
               </div>
               <span class="badge info">Mon / Thu / Sat</span>
             </div>
-            <div class="chart-wrap tight"><canvas id="coverageChart"></canvas></div>
+            <div class="chart-wrap coverage-main"><canvas id="coverageChart"></canvas></div>
           </article>
 
-          <div class="stack">
-            <article class="card pad">
-              <div class="panel-head">
-                <div>
-                  <h3>Риск деградации</h3>
-                  <p>Прогнозный сигнал снижения покрытия.</p>
-                </div>
+          <article class="card pad">
+            <div class="panel-head">
+              <div>
+                <h3>Риск деградации</h3>
+                <p>Прогнозный сигнал снижения покрытия.</p>
               </div>
-              <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
-            </article>
+            </div>
+            <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
+          </article>
 
-            <article class="card pad">
-              <div class="panel-head">
-                <div>
-                  <h3>Объёмы</h3>
-                  <p>Размер каталога и число показанных SKU.</p>
-                </div>
+          <article class="card pad">
+            <div class="panel-head">
+              <div>
+                <h3>Объёмы</h3>
+                <p>Размер каталога и число показанных SKU.</p>
               </div>
-              <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
-            </article>
-          </div>
+            </div>
+            <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
+          </article>
         </div>
       </section>
 
@@ -923,12 +518,10 @@
         const baseCoverage = 0.742;
         const baseShow = 0.818;
         const baseGmv = 0.876;
-        const baseRisk = 0.278;
-
+        const riskShift = dep.risk - 0.21;
         const coverageShift = dep.coverage - baseCoverage;
         const showShift = dep.coverage_show - baseShow;
         const gmvShift = dep.coverage_gmv - baseGmv;
-        const riskShift = dep.risk - 0.21;
 
         const coverageValue = lastCoverage
           ? clamp(lastCoverage.coverage + coverageShift * 0.6, 0.40, 0.98)
