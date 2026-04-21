@@ -26,7 +26,6 @@
       --danger:#c62828;
       --purple:#7a39bb;
       --shadow:0 8px 24px rgba(16,24,40,.06);
-      --radius:16px;
       --sidebar:270px;
     }
 
@@ -201,9 +200,10 @@
       flex-wrap:wrap;
       gap:10px;
       align-items:center;
+      justify-content:flex-end;
     }
 
-    .btn,.select{
+    .btn,.select,.input{
       font:inherit;
       color:var(--text);
       background:var(--surface);
@@ -217,6 +217,17 @@
       cursor:pointer;
       min-width:44px;
       min-height:44px;
+    }
+
+    .input{
+      min-width:150px;
+    }
+
+    .controls-group{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
     }
 
     .section{
@@ -296,7 +307,7 @@
       justify-content:space-between;
       align-items:flex-start;
       gap:12px;
-      margin-bottom:14px;
+      margin-bottom:12px;
     }
 
     .panel-head h3{
@@ -331,8 +342,12 @@
       height:320px;
     }
 
+    .chart-wrap.tight{
+      height:295px;
+    }
+
     .chart-wrap.tall{
-      height:380px;
+      height:360px;
     }
 
     .mini-list{
@@ -392,8 +407,9 @@
         margin-bottom:18px;
       }
       .topbar{flex-direction:column}
+      .controls{justify-content:flex-start}
       .kpis{grid-template-columns:1fr}
-      .chart-wrap,.chart-wrap.tall{height:300px}
+      .chart-wrap,.chart-wrap.tight,.chart-wrap.tall{height:300px}
     }
   </style>
 </head>
@@ -413,7 +429,7 @@
         <a href="#coverage">Покрытие</a>
         <a href="#precision">Точность</a>
         <a href="#catalog">Качество каталога</a>
-        <a href="#annotation">Разметка</a>
+        <a href="#other">Другое</a>
       </nav>
 
       <div class="side-section">
@@ -442,15 +458,21 @@
           <h2>Дашборд мониторинга сопоставления</h2>
           <p>
             В дашборде отображаются метрики покрытия, точности, качества каталога,
-            ручной разметки и риска деградации. Частота замеров соответствует логике процесса:
-            покрытие — 3 раза в неделю, точность total и shown — еженедельно, срезы по департаментам и типам сопоставления — ежемесячно.
+            ручной разметки и риска деградации. Все значения строятся по данным из data.json.
           </p>
         </div>
         <div class="controls">
-          <select class="select" id="departmentSelect">
-            <option value="all">Все департаменты</option>
-          </select>
-          <button class="btn" id="themeToggle">◐</button>
+          <div class="controls-group">
+            <input class="input" type="date" id="dateFrom">
+            <input class="input" type="date" id="dateTo">
+            <button class="btn" id="resetDates" title="Сбросить период">↺</button>
+          </div>
+          <div class="controls-group">
+            <select class="select" id="departmentSelect">
+              <option value="all">Все департаменты</option>
+            </select>
+            <button class="btn" id="themeToggle">◐</button>
+          </div>
         </div>
       </section>
 
@@ -488,7 +510,7 @@
               </div>
               <span class="badge info">Mon / Thu / Sat</span>
             </div>
-            <div class="chart-wrap tall"><canvas id="coverageChart"></canvas></div>
+            <div class="chart-wrap tight"><canvas id="coverageChart"></canvas></div>
           </article>
 
           <div class="stack">
@@ -591,10 +613,6 @@
             <div class="chart-wrap tall"><canvas id="contentMetricsChart"></canvas></div>
           </article>
         </div>
-      </section>
-
-      <section class="section" id="annotation">
-        <h3 class="section-title">Разметка</h3>
 
         <div class="grid-eq">
           <article class="card pad">
@@ -619,13 +637,17 @@
             <div class="chart-wrap"><canvas id="sampleCutsChart"></canvas></div>
           </article>
         </div>
+      </section>
+
+      <section class="section" id="other">
+        <h3 class="section-title">Другое</h3>
 
         <div class="grid-eq">
           <article class="card pad">
             <div class="panel-head">
               <div>
                 <h3>Сводка по департаментам</h3>
-                <p>Агрегированный срез покрытия, точности и риска.</p>
+                <p>Значения рассчитываются по последнему доступному моменту внутри выбранного периода.</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -650,7 +672,7 @@
             <div class="panel-head">
               <div>
                 <h3>Размеры выборок</h3>
-                <p>Размеры семплов для регулярного контроля.</p>
+                <p>Берутся из текущих серий и summary в data.json.</p>
               </div>
             </div>
             <div class="mini-list" id="sampleInfoList"></div>
@@ -664,7 +686,11 @@
     const state = {
       raw: null,
       charts: [],
-      selectedDepartment: 'all'
+      selectedDepartment: 'all',
+      minDate: null,
+      maxDate: null,
+      currentFrom: null,
+      currentTo: null
     };
 
     function css(name){
@@ -682,11 +708,11 @@
     }
 
     function fmtPct(v, digits = 1){
-      return `${(v * 100).toFixed(digits)}%`;
+      return typeof v === 'number' ? `${(v * 100).toFixed(digits)}%` : '—';
     }
 
     function fmtNum(v){
-      return new Intl.NumberFormat('ru-RU').format(v);
+      return typeof v === 'number' ? new Intl.NumberFormat('ru-RU').format(v) : '—';
     }
 
     function fmtDelta(v){
@@ -697,9 +723,6 @@
     function clamp(v, min, max){
       return Math.max(min, Math.min(max, v));
     }
-
-    function latest(arr){ return arr[arr.length - 1]; }
-    function prev(arr){ return arr[arr.length - 2]; }
 
     function getDeltaClass(delta, reverse = false){
       if (Math.abs(delta) < 0.0001) return 'neutral';
@@ -760,6 +783,29 @@
       state.charts = [];
     }
 
+    function parseDate(s){
+      return new Date(`${s}T00:00:00`);
+    }
+
+    function inRange(dateStr){
+      const d = parseDate(dateStr);
+      const from = state.currentFrom ? parseDate(state.currentFrom) : null;
+      const to = state.currentTo ? parseDate(state.currentTo) : null;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+
+    function filterSeries(arr){
+      return (arr || []).filter(x => inRange(x.date));
+    }
+
+    function lastTwo(arr){
+      if (!arr || arr.length === 0) return [null, null];
+      if (arr.length === 1) return [arr[0], arr[0]];
+      return [arr[arr.length - 1], arr[arr.length - 2]];
+    }
+
     function populateDepartmentSelect(){
       const select = document.getElementById('departmentSelect');
       (state.raw.departments || []).forEach(dep => {
@@ -768,6 +814,28 @@
         option.textContent = dep.name;
         select.appendChild(option);
       });
+    }
+
+    function initDateControls(){
+      const coverage = state.raw.series.coverage_snapshots || [];
+      const min = coverage[0]?.date || state.raw.meta?.date_from;
+      const max = coverage[coverage.length - 1]?.date || state.raw.meta?.date_to;
+
+      state.minDate = min;
+      state.maxDate = max;
+      state.currentFrom = min;
+      state.currentTo = max;
+
+      const fromInput = document.getElementById('dateFrom');
+      const toInput = document.getElementById('dateTo');
+
+      fromInput.min = min;
+      fromInput.max = max;
+      toInput.min = min;
+      toInput.max = max;
+
+      fromInput.value = min;
+      toInput.value = max;
     }
 
     function renderLegend(){
@@ -783,29 +851,16 @@
       `).join('');
     }
 
-    function renderDepartmentTable(){
-      const tbody = document.getElementById('departmentTable');
-      tbody.innerHTML = (state.raw.departments || []).map(dep => `
-        <tr>
-          <td><strong>${dep.name}</strong></td>
-          <td>${fmtNum(dep.size)}</td>
-          <td>${fmtPct(dep.coverage)}</td>
-          <td>${fmtPct(dep.coverage_show)}</td>
-          <td>${fmtPct(dep.coverage_gmv)}</td>
-          <td>${fmtPct(dep.precision)}</td>
-          <td><span class="badge ${riskBadgeClass(dep.risk)}">${riskBadgeText(dep.risk)} · ${fmtPct(dep.risk)}</span></td>
-        </tr>
-      `).join('');
-    }
-
-    function renderSampleInfo(){
-      const s = state.raw.summary || {};
-      document.getElementById('sampleInfoList').innerHTML = `
-        <div class="mini-item"><span>Precision sample</span><strong>${fmtNum(s.labeling_sample_size_precision)}</strong></div>
-        <div class="mini-item"><span>Catalog quality sample</span><strong>${fmtNum(s.labeling_sample_size_catalog_quality)}</strong></div>
-        <div class="mini-item"><span>Последний catalog size</span><strong>${fmtNum(s.catalog_size)}</strong></div>
-        <div class="mini-item"><span>Последний offer flow</span><strong>${fmtNum(s.offer_flow_last)}</strong></div>
-      `;
+    function getFilteredData(){
+      return {
+        coverage: filterSeries(state.raw.series.coverage_snapshots || []),
+        precisionTotal: filterSeries(state.raw.series.precision_total_weekly || []),
+        precisionShow: filterSeries(state.raw.series.precision_show_weekly || []),
+        precisionDepartments: filterSeries(state.raw.series.precision_by_department_monthly || []),
+        precisionTypes: filterSeries(state.raw.series.precision_by_matching_type_monthly || []),
+        manualQuality: filterSeries(state.raw.series.catalog_quality_manual_monthly || []),
+        sampleCutQuality: filterSeries(state.raw.series.sample_cut_quality_monthly || [])
+      };
     }
 
     function applyDepartmentToCoverage(rows){
@@ -816,7 +871,6 @@
 
       const baseCoverage = 0.742;
       const baseRisk = 0.21;
-
       const coverageFactor = dep.coverage - baseCoverage;
       const riskFactor = dep.risk - baseRisk;
 
@@ -834,14 +888,99 @@
       }));
     }
 
-    function renderKpis(){
-      const coverage = applyDepartmentToCoverage(state.raw.series.coverage_snapshots || []);
-      const precisionTotal = state.raw.series.precision_total_weekly || [];
+    function getDepartmentPrecisionMap(rows){
+      const map = {};
+      rows.forEach(r => {
+        map[r.departmentId] = r.precision;
+      });
+      return map;
+    }
 
-      const lastCoverage = latest(coverage);
-      const prevCoverage = prev(coverage);
-      const lastPrecision = latest(precisionTotal);
-      const prevPrecision = prev(precisionTotal);
+    function renderDepartmentTable(){
+      const { coverage, precisionDepartments } = getFilteredData();
+      const adjustedCoverage = applyDepartmentToCoverage(coverage);
+      const lastCoverage = adjustedCoverage.length ? adjustedCoverage[adjustedCoverage.length - 1] : null;
+
+      const filteredDeptPrecision = precisionDepartments.length
+        ? precisionDepartments
+        : (state.raw.series.precision_by_department_monthly || []);
+
+      const latestDeptDate = filteredDeptPrecision.length
+        ? filteredDeptPrecision[filteredDeptPrecision.length - 1].date
+        : null;
+
+      const latestDeptRows = latestDeptDate
+        ? filteredDeptPrecision.filter(x => x.date === latestDeptDate)
+        : [];
+
+      const precisionMap = getDepartmentPrecisionMap(latestDeptRows);
+
+      const tbody = document.getElementById('departmentTable');
+      tbody.innerHTML = (state.raw.departments || []).map(dep => {
+        const baseCoverage = 0.742;
+        const baseShow = 0.818;
+        const baseGmv = 0.876;
+        const baseRisk = 0.278;
+
+        const coverageShift = dep.coverage - baseCoverage;
+        const showShift = dep.coverage_show - baseShow;
+        const gmvShift = dep.coverage_gmv - baseGmv;
+        const riskShift = dep.risk - 0.21;
+
+        const coverageValue = lastCoverage
+          ? clamp(lastCoverage.coverage + coverageShift * 0.6, 0.40, 0.98)
+          : dep.coverage;
+
+        const coverageShowValue = lastCoverage
+          ? clamp(lastCoverage.coverageShow + showShift * 0.55, 0.40, 0.99)
+          : dep.coverage_show;
+
+        const coverageGmvValue = lastCoverage
+          ? clamp(lastCoverage.coverageGmv + gmvShift * 0.55, 0.40, 0.99)
+          : dep.coverage_gmv;
+
+        const riskValue = lastCoverage
+          ? clamp(lastCoverage.risk + riskShift * 0.5, 0, 1)
+          : dep.risk;
+
+        const precisionValue = precisionMap[dep.id] ?? dep.precision;
+
+        return `
+          <tr>
+            <td><strong>${dep.name}</strong></td>
+            <td>${fmtNum(dep.size)}</td>
+            <td>${fmtPct(coverageValue)}</td>
+            <td>${fmtPct(coverageShowValue)}</td>
+            <td>${fmtPct(coverageGmvValue)}</td>
+            <td>${fmtPct(precisionValue)}</td>
+            <td><span class="badge ${riskBadgeClass(riskValue)}">${riskBadgeText(riskValue)} · ${fmtPct(riskValue)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderSampleInfo(){
+      const { precisionTotal, manualQuality, coverage } = getFilteredData();
+      const lastCoverage = coverage.length ? coverage[coverage.length - 1] : null;
+      const lastPrecision = precisionTotal.length ? precisionTotal[precisionTotal.length - 1] : null;
+      const lastManual = manualQuality.length ? manualQuality[manualQuality.length - 1] : null;
+
+      document.getElementById('sampleInfoList').innerHTML = `
+        <div class="mini-item"><span>Precision sample</span><strong>${fmtNum(lastPrecision?.sampleSize)}</strong></div>
+        <div class="mini-item"><span>Catalog quality sample</span><strong>${fmtNum(lastManual?.sampleSize)}</strong></div>
+        <div class="mini-item"><span>Последний catalog size</span><strong>${fmtNum(lastCoverage?.catalogSize)}</strong></div>
+        <div class="mini-item"><span>Последний offer flow</span><strong>${fmtNum(lastCoverage?.offerFlow)}</strong></div>
+      `;
+    }
+
+    function renderKpis(){
+      const data = getFilteredData();
+      const coverage = applyDepartmentToCoverage(data.coverage);
+
+      const [lastCoverage, prevCoverage] = lastTwo(coverage);
+      const [lastPrecision, prevPrecision] = lastTwo(data.precisionTotal);
+
+      if (!lastCoverage || !lastPrecision) return;
 
       document.getElementById('kpiCoverageShow').textContent = fmtPct(lastCoverage.coverageShow);
       const covShowDelta = lastCoverage.coverageShow - prevCoverage.coverageShow;
@@ -871,25 +1010,27 @@
     function buildCharts(){
       destroyCharts();
 
-      const coverage = applyDepartmentToCoverage(state.raw.series.coverage_snapshots || []);
-      const precisionTotal = state.raw.series.precision_total_weekly || [];
-      const precisionShow = state.raw.series.precision_show_weekly || [];
-      const precisionDepartments = state.raw.series.precision_by_department_monthly || [];
-      const precisionTypes = state.raw.series.precision_by_matching_type_monthly || [];
-      const manualQuality = state.raw.series.catalog_quality_manual_monthly || [];
-      const sampleCutQuality = state.raw.series.sample_cut_quality_monthly || [];
+      const {
+        coverage,
+        precisionTotal,
+        precisionShow,
+        precisionDepartments,
+        precisionTypes,
+        manualQuality,
+        sampleCutQuality
+      } = getFilteredData();
 
+      const adjustedCoverage = applyDepartmentToCoverage(coverage);
       const base = chartOptions();
 
-      // Coverage chart
       state.charts.push(new Chart(document.getElementById('coverageChart'), {
         type: 'line',
         data: {
-          labels: coverage.map(x => x.label),
+          labels: adjustedCoverage.map(x => x.label),
           datasets: [
             {
               label: 'Coverage total',
-              data: coverage.map(x => +(x.coverage * 100).toFixed(2)),
+              data: adjustedCoverage.map(x => +(x.coverage * 100).toFixed(2)),
               borderColor: css('--primary'),
               backgroundColor: rgba(css('--primary'), .12),
               tension: .3,
@@ -897,7 +1038,7 @@
             },
             {
               label: 'Coverage shown',
-              data: coverage.map(x => +(x.coverageShow * 100).toFixed(2)),
+              data: adjustedCoverage.map(x => +(x.coverageShow * 100).toFixed(2)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .3,
@@ -905,7 +1046,7 @@
             },
             {
               label: 'Coverage GMV',
-              data: coverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
+              data: adjustedCoverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
               borderColor: css('--purple'),
               backgroundColor: rgba(css('--purple'), .12),
               tension: .3,
@@ -913,7 +1054,7 @@
             },
             {
               label: 'Offer flow',
-              data: coverage.map(x => x.offerFlow),
+              data: adjustedCoverage.map(x => x.offerFlow),
               borderColor: css('--warning'),
               backgroundColor: rgba(css('--warning'), .12),
               tension: .25,
@@ -926,20 +1067,23 @@
           scales: {
             x: base.scales.x,
             y: { ...base.scales.y, min: 50, max: 100, position: 'left' },
-            y1: { position: 'right', ticks: { color: css('--muted') }, grid: { drawOnChartArea: false } }
+            y1: {
+              position: 'right',
+              ticks: { color: css('--muted') },
+              grid: { drawOnChartArea: false }
+            }
           }
         }
       }));
 
-      // Risk chart
       state.charts.push(new Chart(document.getElementById('riskChart'), {
         type: 'line',
         data: {
-          labels: coverage.map(x => x.label),
+          labels: adjustedCoverage.map(x => x.label),
           datasets: [
             {
               label: 'Risk',
-              data: coverage.map(x => +(x.risk * 100).toFixed(1)),
+              data: adjustedCoverage.map(x => +(x.risk * 100).toFixed(1)),
               borderColor: css('--danger'),
               backgroundColor: rgba(css('--danger'), .14),
               fill: true,
@@ -947,38 +1091,34 @@
             },
             {
               label: 'Threshold',
-              data: coverage.map(() => 32),
+              data: adjustedCoverage.map(() => 32),
               borderColor: css('--warning'),
-              borderDash: [6, 6],
+              borderDash: [6,6],
               pointRadius: 0
             }
           ]
         },
         options: {
           ...base,
-          scales: {
-            ...base.scales,
-            y: { ...base.scales.y, min: 0, max: 100 }
-          }
+          scales: { ...base.scales, y: { ...base.scales.y, min: 0, max: 100 } }
         }
       }));
 
-      // Volume chart
       state.charts.push(new Chart(document.getElementById('volumeChart'), {
         type: 'line',
         data: {
-          labels: coverage.map(x => x.label),
+          labels: adjustedCoverage.map(x => x.label),
           datasets: [
             {
               label: 'Catalog size',
-              data: coverage.map(x => x.catalogSize),
+              data: adjustedCoverage.map(x => x.catalogSize),
               borderColor: css('--primary-2'),
               backgroundColor: rgba(css('--primary-2'), .12),
               tension: .25
             },
             {
               label: 'Shown SKU count',
-              data: coverage.map(x => x.shownSkuCount),
+              data: adjustedCoverage.map(x => x.shownSkuCount),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .25
@@ -988,7 +1128,6 @@
         options: base
       }));
 
-      // Precision total
       state.charts.push(new Chart(document.getElementById('precisionTotalChart'), {
         type: 'line',
         data: {
@@ -1002,13 +1141,9 @@
             tension: .3
           }]
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
       }));
 
-      // Precision shown
       state.charts.push(new Chart(document.getElementById('precisionShowChart'), {
         type: 'line',
         data: {
@@ -1022,13 +1157,9 @@
             tension: .3
           }]
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
       }));
 
-      // Precision by departments
       const depLabels = [...new Set(precisionDepartments.map(x => x.label))];
       const depGroups = {};
       precisionDepartments.forEach(row => {
@@ -1050,13 +1181,9 @@
             fill: false
           }))
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
       }));
 
-      // Precision by matching type
       const typeLabels = [...new Set(precisionTypes.map(x => x.label))];
       const typeGroups = {};
       precisionTypes.forEach(row => {
@@ -1079,48 +1206,39 @@
             fill: false
           }))
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
       }));
 
-      // Catalog quality
       state.charts.push(new Chart(document.getElementById('catalogQualityChart'), {
         type: 'line',
         data: {
-          labels: coverage.map(x => x.label),
+          labels: adjustedCoverage.map(x => x.label),
           datasets: [
-            { label: 'Brand fill', data: coverage.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
-            { label: 'Title fill', data: coverage.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Description fill', data: coverage.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
-            { label: 'Attributes fill', data: coverage.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
-            { label: 'Text embeddings', data: coverage.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
-            { label: 'Image embeddings', data: coverage.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
+            { label: 'Brand fill', data: adjustedCoverage.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
+            { label: 'Title fill', data: adjustedCoverage.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Description fill', data: adjustedCoverage.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
+            { label: 'Attributes fill', data: adjustedCoverage.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
+            { label: 'Text embeddings', data: adjustedCoverage.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
+            { label: 'Image embeddings', data: adjustedCoverage.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
           ]
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } } }
       }));
 
-      // Content metrics
       state.charts.push(new Chart(document.getElementById('contentMetricsChart'), {
         type: 'line',
         data: {
-          labels: coverage.map(x => x.label),
+          labels: adjustedCoverage.map(x => x.label),
           datasets: [
-            { label: 'Title len', data: coverage.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
-            { label: 'Description len', data: coverage.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Image count', data: coverage.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
-            { label: 'Image signatures', data: coverage.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
+            { label: 'Title len', data: adjustedCoverage.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
+            { label: 'Description len', data: adjustedCoverage.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Image count', data: adjustedCoverage.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
+            { label: 'Image signatures', data: adjustedCoverage.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
           ]
         },
         options: base
       }));
 
-      // Manual quality
       state.charts.push(new Chart(document.getElementById('manualQualityChart'), {
         type: 'bar',
         data: {
@@ -1132,23 +1250,16 @@
             { label: 'Golden set', data: manualQuality.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)), backgroundColor: rgba(css('--purple'), .78), borderRadius: 10 }
           ]
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 80, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 80, max: 100 } } }
       }));
 
-      // Sample cuts quality
       const cutLabels = [...new Set(sampleCutQuality.map(x => x.label))];
       const cutGroups = {};
       sampleCutQuality.forEach(row => {
         if (!cutGroups[row.sampleCut]) cutGroups[row.sampleCut] = [];
         cutGroups[row.sampleCut].push(row);
       });
-      const cutPalette = [
-        "#01696f","#5591c7","#7a39bb","#d97706","#2e7d32",
-        "#c62828","#0ea5e9","#8b5cf6","#14b8a6","#f59e0b"
-      ];
+      const cutPalette = ["#01696f","#5591c7","#7a39bb","#d97706","#2e7d32","#c62828","#0ea5e9","#8b5cf6","#14b8a6","#f59e0b"];
 
       state.charts.push(new Chart(document.getElementById('sampleCutsChart'), {
         type: 'line',
@@ -1163,25 +1274,53 @@
             fill: false
           }))
         },
-        options: {
-          ...base,
-          scales: { ...base.scales, y: { ...base.scales.y, min: 85, max: 100 } }
-        }
+        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 85, max: 100 } } }
       }));
+    }
+
+    function refresh(){
+      renderKpis();
+      renderDepartmentTable();
+      renderSampleInfo();
+      buildCharts();
     }
 
     function bindEvents(){
       document.getElementById('departmentSelect').addEventListener('change', e => {
         state.selectedDepartment = e.target.value;
-        renderKpis();
-        buildCharts();
+        refresh();
+      });
+
+      document.getElementById('dateFrom').addEventListener('change', e => {
+        state.currentFrom = e.target.value || state.minDate;
+        if (state.currentFrom > state.currentTo) {
+          state.currentTo = state.currentFrom;
+          document.getElementById('dateTo').value = state.currentTo;
+        }
+        refresh();
+      });
+
+      document.getElementById('dateTo').addEventListener('change', e => {
+        state.currentTo = e.target.value || state.maxDate;
+        if (state.currentTo < state.currentFrom) {
+          state.currentFrom = state.currentTo;
+          document.getElementById('dateFrom').value = state.currentFrom;
+        }
+        refresh();
+      });
+
+      document.getElementById('resetDates').addEventListener('click', () => {
+        state.currentFrom = state.minDate;
+        state.currentTo = state.maxDate;
+        document.getElementById('dateFrom').value = state.currentFrom;
+        document.getElementById('dateTo').value = state.currentTo;
+        refresh();
       });
 
       const toggleTheme = () => {
         const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        renderKpis();
-        buildCharts();
+        refresh();
       };
 
       document.getElementById('themeToggle').addEventListener('click', toggleTheme);
@@ -1203,14 +1342,12 @@
 
         populateDepartmentSelect();
         renderLegend();
-        renderDepartmentTable();
-        renderSampleInfo();
+        initDateControls();
 
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
 
-        renderKpis();
-        buildCharts();
+        refresh();
         bindEvents();
       }catch(err){
         console.error(err);
@@ -1218,8 +1355,8 @@
           <div style="max-width:920px;margin:60px auto;padding:24px;font-family:Inter,system-ui,sans-serif">
             <h1 style="margin:0 0 12px">Ошибка загрузки data.json</h1>
             <p style="color:#667085;line-height:1.6">
-              Проверь, что файл <strong>data.json</strong> лежит рядом с <strong>index.html</strong> и страница открыта через HTTP
-              (например, GitHub Pages или локальный сервер), а не через <code>file://</code>.
+              Проверь, что файл <strong>data.json</strong> лежит рядом с <strong>index.html</strong> и страница открыта через HTTP,
+              например через GitHub Pages или локальный сервер.
             </p>
             <pre style="background:#f5f5f5;padding:16px;border-radius:12px;overflow:auto">${String(err)}</pre>
           </div>
