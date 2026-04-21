@@ -415,17 +415,17 @@
       { "date": "2026-01-29", "label": "29.01", "sampleSize": 4200, "precisionShow": 0.955 }
     ],
     "precision_by_matching_type_monthly": [
-      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4200, "matchingType": "VLM", "precision": 0.956 },
-      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4200, "matchingType": "GPT", "precision": 0.944 },
-      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4200, "matchingType": "Claude", "precision": 0.961 },
+      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4500, "matchingType": "VLM", "precision": 0.956 },
+      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4500, "matchingType": "GPT", "precision": 0.944 },
+      { "date": "2025-11-01", "label": "01.11", "sampleSize": 4500, "matchingType": "Claude", "precision": 0.961 },
 
-      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4200, "matchingType": "VLM", "precision": 0.958 },
-      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4200, "matchingType": "GPT", "precision": 0.941 },
-      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4200, "matchingType": "Claude", "precision": 0.962 },
+      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4500, "matchingType": "VLM", "precision": 0.958 },
+      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4500, "matchingType": "GPT", "precision": 0.941 },
+      { "date": "2025-12-01", "label": "01.12", "sampleSize": 4500, "matchingType": "Claude", "precision": 0.962 },
 
-      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4200, "matchingType": "VLM", "precision": 0.957 },
-      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4200, "matchingType": "GPT", "precision": 0.946 },
-      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4200, "matchingType": "Claude", "precision": 0.963 }
+      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4500, "matchingType": "VLM", "precision": 0.957 },
+      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4500, "matchingType": "GPT", "precision": 0.946 },
+      { "date": "2026-01-01", "label": "01.01", "sampleSize": 4500, "matchingType": "Claude", "precision": 0.963 }
     ],
     "precision_by_department_monthly": [
       { "date": "2025-11-15", "label": "15.11", "sampleSize": 15000, "departmentId": "d1", "departmentName": "Электроника", "precision": 0.960 },
