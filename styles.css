@@ -104,6 +104,19 @@ body{
   font-weight:500;
 }
 
+.equal-cards{
+  align-items:stretch;
+}
+
+.equal-cards > .card{
+  height:100%;
+}
+
+.full-height-card .mini-list{
+  height:100%;
+  align-content:start;
+}
+
 .nav a:hover,
 .nav a.active{
   background:var(--surface-2);
