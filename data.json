@@ -99,7 +99,7 @@
     "Правильные параметры",
     "Другой товар по ссылке"
   ],
-"series": { 
+"series": [
   "coverage_snapshots": [
       { "date": "2025-11-01", "label": "01.11", "catalogSize": 874200, "shownSkuCount": 208400, "gmv30d": 472000000, "offerFlow": 538200, "coverage": 0.684, "coverageShow": 0.752, "coverageGmv": 0.811, "brandFill": 0.926, "titleFill": 0.992, "descFill": 0.781, "attrsFill": 0.864, "textEmb": 0.874, "imageEmb": 0.821, "titleLen": 71, "descLen": 372, "imageCnt": 4.7, "imageSig": 4.0, "risk": 0.162 },
       { "date": "2025-11-03", "label": "03.11", "catalogSize": 875100, "shownSkuCount": 209100, "gmv30d": 473400000, "offerFlow": 542900, "coverage": 0.686, "coverageShow": 0.754, "coverageGmv": 0.813, "brandFill": 0.927, "titleFill": 0.992, "descFill": 0.780, "attrsFill": 0.865, "textEmb": 0.875, "imageEmb": 0.822, "titleLen": 71, "descLen": 373, "imageCnt": 4.7, "imageSig": 4.0, "risk": 0.154 },
@@ -491,5 +491,5 @@
       { "date": "2026-01-01", "label": "01.01", "sampleCut": "Правильные параметры", "quality": 0.938 },
       { "date": "2026-01-01", "label": "01.01", "sampleCut": "Другой товар по ссылке", "quality": 0.962 }
     ],
-  }
+  ]
 }
