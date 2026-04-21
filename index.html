@@ -928,7 +928,7 @@
             },
             {
               label: 'Error Rate',
-              data: manualQuality.map(x => +(x.errorRate * 100).toFixed(1)),
+              data: manualQuality.map(x => +(x.CorrectShare * 100).toFixed(1)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .25,
