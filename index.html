@@ -57,7 +57,7 @@
           <h2>Дашборд мониторинга сопоставления</h2>
           <p>
             В дашборде отображаются метрики покрытия, точности, качества каталога,
-            ручной разметки и риска деградации. Все значения строятся по данным из data.json.
+            ручной разметки и риска деградации. Все значения берутся только из data.json.
           </p>
         </div>
         <div class="controls">
@@ -266,7 +266,7 @@
             </div>
           </article>
 
-          <article class="card pad">
+          <article class="card pad full-height-card">
             <div class="panel-head">
               <div>
                 <h3>Размеры выборок</h3>
@@ -289,6 +289,53 @@
       maxDate: null,
       currentFrom: null,
       currentTo: null
+    };
+
+    const valueLabelPlugin = {
+      id: 'valueLabelPlugin',
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx } = chart;
+        const opts = pluginOptions || {};
+        const mode = opts.mode || 'last';
+        const color = opts.color || css('--muted');
+        const formatter = opts.formatter || ((v) => String(v));
+
+        ctx.save();
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillStyle = color;
+        ctx.textBaseline = 'middle';
+
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          if (meta.hidden) return;
+
+          if (mode === 'last') {
+            const lastIndex = dataset.data.length - 1;
+            if (lastIndex < 0) return;
+            const point = meta.data[lastIndex];
+            if (!point) return;
+            const value = dataset.data[lastIndex];
+            const text = formatter(value, dataset, lastIndex);
+            if (!text) return;
+            ctx.fillStyle = dataset.borderColor || color;
+            ctx.textAlign = 'left';
+            ctx.fillText(text, point.x + 8, point.y);
+          }
+
+          if (mode === 'bars') {
+            meta.data.forEach((bar, index) => {
+              const value = dataset.data[index];
+              const text = formatter(value, dataset, index);
+              if (!text) return;
+              ctx.fillStyle = color;
+              ctx.textAlign = 'center';
+              ctx.fillText(text, bar.x, bar.y - 10);
+            });
+          }
+        });
+
+        ctx.restore();
+      }
     };
 
     function css(name){
@@ -316,10 +363,6 @@
     function fmtDelta(v){
       const sign = v > 0 ? '+' : '';
       return `${sign}${(v * 100).toFixed(1)} п.п.`;
-    }
-
-    function clamp(v, min, max){
-      return Math.max(min, Math.min(max, v));
     }
 
     function getDeltaClass(delta, reverse = false){
@@ -461,95 +504,58 @@
       };
     }
 
-    function applyDepartmentToCoverage(rows){
-      if (state.selectedDepartment === 'all') return rows;
-
-      const dep = state.raw.departments.find(d => d.id === state.selectedDepartment);
-      if (!dep) return rows;
-
-      const baseCoverage = 0.742;
-      const baseRisk = 0.21;
-      const coverageFactor = dep.coverage - baseCoverage;
-      const riskFactor = dep.risk - baseRisk;
-
-      return rows.map(r => ({
-        ...r,
-        coverage: clamp(r.coverage + coverageFactor * 0.60, 0.45, 0.95),
-        coverageShow: clamp(r.coverageShow + coverageFactor * 0.72, 0.50, 0.97),
-        coverageGmv: clamp(r.coverageGmv + coverageFactor * 0.78, 0.55, 0.98),
-        brandFill: clamp(r.brandFill + coverageFactor * 0.12, 0.60, 1),
-        descFill: clamp(r.descFill + coverageFactor * 0.18, 0.50, 1),
-        attrsFill: clamp(r.attrsFill + coverageFactor * 0.15, 0.50, 1),
-        textEmb: clamp(r.textEmb + coverageFactor * 0.16, 0.50, 1),
-        imageEmb: clamp(r.imageEmb + coverageFactor * 0.16, 0.45, 1),
-        risk: clamp(r.risk + riskFactor * 0.35, 0, 1)
-      }));
-    }
-
-    function getDepartmentPrecisionMap(rows){
-      const map = {};
-      rows.forEach(r => {
-        map[r.departmentId] = r.precision;
-      });
-      return map;
-    }
-
     function renderDepartmentTable(){
-      const { coverage, precisionDepartments } = getFilteredData();
-      const adjustedCoverage = applyDepartmentToCoverage(coverage);
-      const lastCoverage = adjustedCoverage.length ? adjustedCoverage[adjustedCoverage.length - 1] : null;
+      const { precisionDepartments } = getFilteredData();
 
-      const filteredDeptPrecision = precisionDepartments.length
+      const sourceRows = precisionDepartments.length
         ? precisionDepartments
         : (state.raw.series.precision_by_department_monthly || []);
 
-      const latestDeptDate = filteredDeptPrecision.length
-        ? filteredDeptPrecision[filteredDeptPrecision.length - 1].date
+      const latestDate = sourceRows.length
+        ? sourceRows[sourceRows.length - 1].date
         : null;
 
-      const latestDeptRows = latestDeptDate
-        ? filteredDeptPrecision.filter(x => x.date === latestDeptDate)
+      const latestRows = latestDate
+        ? sourceRows.filter(x => x.date === latestDate)
         : [];
 
-      const precisionMap = getDepartmentPrecisionMap(latestDeptRows);
+      const precisionMap = {};
+      latestRows.forEach(r => { precisionMap[r.departmentId] = r.precision; });
 
       const tbody = document.getElementById('departmentTable');
-      tbody.innerHTML = (state.raw.departments || []).map(dep => {
-        const baseCoverage = 0.742;
-        const baseShow = 0.818;
-        const baseGmv = 0.876;
-        const riskShift = dep.risk - 0.21;
-        const coverageShift = dep.coverage - baseCoverage;
-        const showShift = dep.coverage_show - baseShow;
-        const gmvShift = dep.coverage_gmv - baseGmv;
 
-        const coverageValue = lastCoverage
-          ? clamp(lastCoverage.coverage + coverageShift * 0.6, 0.40, 0.98)
-          : dep.coverage;
-
-        const coverageShowValue = lastCoverage
-          ? clamp(lastCoverage.coverageShow + showShift * 0.55, 0.40, 0.99)
-          : dep.coverage_show;
-
-        const coverageGmvValue = lastCoverage
-          ? clamp(lastCoverage.coverageGmv + gmvShift * 0.55, 0.40, 0.99)
-          : dep.coverage_gmv;
-
-        const riskValue = lastCoverage
-          ? clamp(lastCoverage.risk + riskShift * 0.5, 0, 1)
-          : dep.risk;
-
+      if (state.selectedDepartment !== 'all') {
+        const dep = (state.raw.departments || []).find(d => d.id === state.selectedDepartment);
+        if (!dep) {
+          tbody.innerHTML = '';
+          return;
+        }
         const precisionValue = precisionMap[dep.id] ?? dep.precision;
+        tbody.innerHTML = `
+          <tr>
+            <td><strong>${dep.name}</strong></td>
+            <td>${fmtNum(dep.size)}</td>
+            <td>${fmtPct(dep.coverage)}</td>
+            <td>${fmtPct(dep.coverage_show)}</td>
+            <td>${fmtPct(dep.coverage_gmv)}</td>
+            <td>${fmtPct(precisionValue)}</td>
+            <td><span class="badge ${riskBadgeClass(dep.risk)}">${riskBadgeText(dep.risk)} · ${fmtPct(dep.risk)}</span></td>
+          </tr>
+        `;
+        return;
+      }
 
+      tbody.innerHTML = (state.raw.departments || []).map(dep => {
+        const precisionValue = precisionMap[dep.id] ?? dep.precision;
         return `
           <tr>
             <td><strong>${dep.name}</strong></td>
             <td>${fmtNum(dep.size)}</td>
-            <td>${fmtPct(coverageValue)}</td>
-            <td>${fmtPct(coverageShowValue)}</td>
-            <td>${fmtPct(coverageGmvValue)}</td>
+            <td>${fmtPct(dep.coverage)}</td>
+            <td>${fmtPct(dep.coverage_show)}</td>
+            <td>${fmtPct(dep.coverage_gmv)}</td>
             <td>${fmtPct(precisionValue)}</td>
-            <td><span class="badge ${riskBadgeClass(riskValue)}">${riskBadgeText(riskValue)} · ${fmtPct(riskValue)}</span></td>
+            <td><span class="badge ${riskBadgeClass(dep.risk)}">${riskBadgeText(dep.risk)} · ${fmtPct(dep.risk)}</span></td>
           </tr>
         `;
       }).join('');
@@ -571,9 +577,7 @@
 
     function renderKpis(){
       const data = getFilteredData();
-      const coverage = applyDepartmentToCoverage(data.coverage);
-
-      const [lastCoverage, prevCoverage] = lastTwo(coverage);
+      const [lastCoverage, prevCoverage] = lastTwo(data.coverage);
       const [lastPrecision, prevPrecision] = lastTwo(data.precisionTotal);
 
       if (!lastCoverage || !lastPrecision) return;
@@ -616,17 +620,16 @@
         sampleCutQuality
       } = getFilteredData();
 
-      const adjustedCoverage = applyDepartmentToCoverage(coverage);
       const base = chartOptions();
 
       state.charts.push(new Chart(document.getElementById('coverageChart'), {
         type: 'line',
         data: {
-          labels: adjustedCoverage.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
               label: 'Coverage total',
-              data: adjustedCoverage.map(x => +(x.coverage * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverage * 100).toFixed(2)),
               borderColor: css('--primary'),
               backgroundColor: rgba(css('--primary'), .12),
               tension: .3,
@@ -634,7 +637,7 @@
             },
             {
               label: 'Coverage shown',
-              data: adjustedCoverage.map(x => +(x.coverageShow * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverageShow * 100).toFixed(2)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .3,
@@ -642,7 +645,7 @@
             },
             {
               label: 'Coverage GMV',
-              data: adjustedCoverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
+              data: coverage.map(x => +(x.coverageGmv * 100).toFixed(2)),
               borderColor: css('--purple'),
               backgroundColor: rgba(css('--purple'), .12),
               tension: .3,
@@ -650,7 +653,7 @@
             },
             {
               label: 'Offer flow',
-              data: adjustedCoverage.map(x => x.offerFlow),
+              data: coverage.map(x => x.offerFlow),
               borderColor: css('--warning'),
               backgroundColor: rgba(css('--warning'), .12),
               tension: .25,
@@ -660,6 +663,16 @@
         },
         options: {
           ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v, dataset) => {
+                if (dataset.label === 'Offer flow') return `${Math.round(v / 1000)}k`;
+                return `${v.toFixed(1)}`;
+              }
+            }
+          },
           scales: {
             x: base.scales.x,
             y: { ...base.scales.y, min: 50, max: 100, position: 'left' },
@@ -675,11 +688,11 @@
       state.charts.push(new Chart(document.getElementById('riskChart'), {
         type: 'line',
         data: {
-          labels: adjustedCoverage.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
               label: 'Risk',
-              data: adjustedCoverage.map(x => +(x.risk * 100).toFixed(1)),
+              data: coverage.map(x => +(x.risk * 100).toFixed(1)),
               borderColor: css('--danger'),
               backgroundColor: rgba(css('--danger'), .14),
               fill: true,
@@ -687,7 +700,7 @@
             },
             {
               label: 'Threshold',
-              data: adjustedCoverage.map(() => 32),
+              data: coverage.map(() => 32),
               borderColor: css('--warning'),
               borderDash: [6,6],
               pointRadius: 0
@@ -696,6 +709,13 @@
         },
         options: {
           ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v, dataset) => dataset.label === 'Threshold' ? '' : `${v.toFixed(1)}`
+            }
+          },
           scales: { ...base.scales, y: { ...base.scales.y, min: 0, max: 100 } }
         }
       }));
@@ -703,25 +723,34 @@
       state.charts.push(new Chart(document.getElementById('volumeChart'), {
         type: 'line',
         data: {
-          labels: adjustedCoverage.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
             {
               label: 'Catalog size',
-              data: adjustedCoverage.map(x => x.catalogSize),
+              data: coverage.map(x => x.catalogSize),
               borderColor: css('--primary-2'),
               backgroundColor: rgba(css('--primary-2'), .12),
               tension: .25
             },
             {
               label: 'Shown SKU count',
-              data: adjustedCoverage.map(x => x.shownSkuCount),
+              data: coverage.map(x => x.shownSkuCount),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
               tension: .25
             }
           ]
         },
-        options: base
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${Math.round(v / 1000)}k`
+            }
+          }
+        }
       }));
 
       state.charts.push(new Chart(document.getElementById('precisionTotalChart'), {
@@ -737,7 +766,17 @@
             tension: .3
           }]
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
       }));
 
       state.charts.push(new Chart(document.getElementById('precisionShowChart'), {
@@ -753,12 +792,26 @@
             tension: .3
           }]
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
       }));
 
-      const depLabels = [...new Set(precisionDepartments.map(x => x.label))];
+      const depRowsForChart = state.selectedDepartment === 'all'
+        ? precisionDepartments
+        : precisionDepartments.filter(x => x.departmentId === state.selectedDepartment);
+
+      const depLabels = [...new Set(depRowsForChart.map(x => x.label))];
       const depGroups = {};
-      precisionDepartments.forEach(row => {
+      depRowsForChart.forEach(row => {
         if (!depGroups[row.departmentName]) depGroups[row.departmentName] = [];
         depGroups[row.departmentName].push(row);
       });
@@ -777,7 +830,17 @@
             fill: false
           }))
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
       }));
 
       const typeLabels = [...new Set(precisionTypes.map(x => x.label))];
@@ -802,51 +865,118 @@
             fill: false
           }))
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 90, max: 100 } }
+        }
       }));
 
       state.charts.push(new Chart(document.getElementById('catalogQualityChart'), {
         type: 'line',
         data: {
-          labels: adjustedCoverage.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
-            { label: 'Brand fill', data: adjustedCoverage.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
-            { label: 'Title fill', data: adjustedCoverage.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Description fill', data: adjustedCoverage.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
-            { label: 'Attributes fill', data: adjustedCoverage.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
-            { label: 'Text embeddings', data: adjustedCoverage.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
-            { label: 'Image embeddings', data: adjustedCoverage.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
+            { label: 'Brand fill', data: coverage.map(x => +(x.brandFill * 100).toFixed(1)), borderColor: css('--primary'), tension: .25 },
+            { label: 'Title fill', data: coverage.map(x => +(x.titleFill * 100).toFixed(1)), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Description fill', data: coverage.map(x => +(x.descFill * 100).toFixed(1)), borderColor: css('--warning'), tension: .25 },
+            { label: 'Attributes fill', data: coverage.map(x => +(x.attrsFill * 100).toFixed(1)), borderColor: css('--success'), tension: .25 },
+            { label: 'Text embeddings', data: coverage.map(x => +(x.textEmb * 100).toFixed(1)), borderColor: css('--purple'), tension: .25 },
+            { label: 'Image embeddings', data: coverage.map(x => +(x.imageEmb * 100).toFixed(1)), borderColor: css('--danger'), tension: .25 }
           ]
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 60, max: 100 } }
+        }
       }));
 
       state.charts.push(new Chart(document.getElementById('contentMetricsChart'), {
         type: 'line',
         data: {
-          labels: adjustedCoverage.map(x => x.label),
+          labels: coverage.map(x => x.label),
           datasets: [
-            { label: 'Title len', data: adjustedCoverage.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
-            { label: 'Description len', data: adjustedCoverage.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
-            { label: 'Image count', data: adjustedCoverage.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
-            { label: 'Image signatures', data: adjustedCoverage.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
+            { label: 'Title len', data: coverage.map(x => x.titleLen), borderColor: css('--primary'), tension: .25 },
+            { label: 'Description len', data: coverage.map(x => x.descLen), borderColor: css('--primary-2'), tension: .25 },
+            { label: 'Image count', data: coverage.map(x => x.imageCnt), borderColor: css('--success'), tension: .25 },
+            { label: 'Image signatures', data: coverage.map(x => x.imageSig), borderColor: css('--warning'), tension: .25 }
           ]
         },
-        options: base
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v}`
+            }
+          }
+        }
       }));
 
       state.charts.push(new Chart(document.getElementById('manualQualityChart'), {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: manualQuality.map(x => x.label),
           datasets: [
-            { label: 'Catalog quality manual', data: manualQuality.map(x => +(x.catalogQualityManual * 100).toFixed(1)), backgroundColor: rgba(css('--primary'), .78), borderRadius: 10 },
-            { label: 'Agreement', data: manualQuality.map(x => +(x.annotationAgreement * 100).toFixed(1)), backgroundColor: rgba(css('--warning'), .78), borderRadius: 10 },
-            { label: 'Repeatability', data: manualQuality.map(x => +(x.annotationRepeatability * 100).toFixed(1)), backgroundColor: rgba(css('--success'), .78), borderRadius: 10 },
-            { label: 'Golden set', data: manualQuality.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)), backgroundColor: rgba(css('--purple'), .78), borderRadius: 10 }
+            {
+              label: 'Catalog quality manual',
+              data: manualQuality.map(x => +(x.catalogQualityManual * 100).toFixed(1)),
+              borderColor: css('--primary'),
+              backgroundColor: rgba(css('--primary'), .12),
+              tension: .25,
+              fill: false
+            },
+            {
+              label: 'Agreement',
+              data: manualQuality.map(x => +(x.annotationAgreement * 100).toFixed(1)),
+              borderColor: css('--warning'),
+              backgroundColor: rgba(css('--warning'), .12),
+              tension: .25,
+              fill: false
+            },
+            {
+              label: 'Repeatability',
+              data: manualQuality.map(x => +(x.annotationRepeatability * 100).toFixed(1)),
+              borderColor: css('--success'),
+              backgroundColor: rgba(css('--success'), .12),
+              tension: .25,
+              fill: false
+            },
+            {
+              label: 'Golden set',
+              data: manualQuality.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)),
+              borderColor: css('--purple'),
+              backgroundColor: rgba(css('--purple'), .12),
+              tension: .25,
+              fill: false
+            }
           ]
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 80, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 80, max: 100 } }
+        }
       }));
 
       const cutLabels = [...new Set(sampleCutQuality.map(x => x.label))];
@@ -870,7 +1000,17 @@
             fill: false
           }))
         },
-        options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 85, max: 100 } } }
+        options: {
+          ...base,
+          plugins: {
+            ...base.plugins,
+            valueLabelPlugin: {
+              mode: 'last',
+              formatter: (v) => `${v.toFixed(1)}`
+            }
+          },
+          scales: { ...base.scales, y: { ...base.scales.y, min: 85, max: 100 } }
+        }
       }));
     }
 
@@ -942,6 +1082,8 @@
 
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+
+        Chart.register(valueLabelPlugin);
 
         refresh();
         bindEvents();
