@@ -916,14 +916,6 @@
           labels: manualQuality.map(x => x.label),
           datasets: [
             {
-              label: 'Catalog quality manual',
-              data: manualQuality.map(x => +(x.catalogQualityManual * 100).toFixed(1)),
-              borderColor: css('--primary'),
-              backgroundColor: rgba(css('--primary'), .12),
-              tension: .25,
-              fill: false
-            },
-            {
               label: 'Agreement',
               data: manualQuality.map(x => +(x.annotationAgreement * 100).toFixed(1)),
               borderColor: css('--warning'),
@@ -932,18 +924,10 @@
               fill: false
             },
             {
-              label: 'Repeatability',
-              data: manualQuality.map(x => +(x.annotationRepeatability * 100).toFixed(1)),
+              label: 'Error Rate',
+              data: manualQuality.map(x => +(x.errorRate * 100).toFixed(1)),
               borderColor: css('--success'),
               backgroundColor: rgba(css('--success'), .12),
-              tension: .25,
-              fill: false
-            },
-            {
-              label: 'Golden set',
-              data: manualQuality.map(x => +(x.goldenSetAccuracy * 100).toFixed(1)),
-              borderColor: css('--purple'),
-              backgroundColor: rgba(css('--purple'), .12),
               tension: .25,
               fill: false
             }
